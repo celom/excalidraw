@@ -1,10 +1,10 @@
 .excalidraw {
-  &.theme--dark .documents-tab {
-    --documents-text-secondary: var(--color-gray-40);
+  &.theme--dark .scenes-tab {
+    --scenes-text-secondary: var(--color-gray-40);
   }
 
-  .documents-tab {
-    --documents-text-secondary: var(--color-gray-60);
+  .scenes-tab {
+    --scenes-text-secondary: var(--color-gray-60);
 
     display: flex;
     flex-direction: column;
@@ -55,7 +55,7 @@
 
     &__hint {
       font-size: 0.75rem;
-      color: var(--documents-text-secondary);
+      color: var(--scenes-text-secondary);
       padding: 0.375rem 0.5rem;
       background-color: var(--color-surface-high);
       border-radius: var(--border-radius-md);
@@ -70,7 +70,7 @@
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.05em;
-      color: var(--documents-text-secondary);
+      color: var(--scenes-text-secondary);
 
       button {
         display: flex;
@@ -82,7 +82,7 @@
         border: none;
         border-radius: var(--border-radius-md);
         background: transparent;
-        color: var(--documents-text-secondary);
+        color: var(--scenes-text-secondary);
         cursor: pointer;
 
         svg {
@@ -138,7 +138,7 @@
         flex: 0 0 auto;
         width: 1rem;
         height: 1rem;
-        color: var(--documents-text-secondary);
+        color: var(--scenes-text-secondary);
         // avoid dragenter/dragleave churn from the icon while hovering a drop
         // target
         pointer-events: none;
@@ -206,7 +206,7 @@
 
     &__item-time {
       font-size: 0.6875rem;
-      color: var(--documents-text-secondary);
+      color: var(--scenes-text-secondary);
     }
   }
 }

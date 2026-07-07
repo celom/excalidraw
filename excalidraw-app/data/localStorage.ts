@@ -6,8 +6,12 @@ import {
 import type { ExcalidrawElement } from "@excalidraw/element/types";
 import type { AppState } from "@excalidraw/excalidraw/types";
 
-import { STORAGE_KEYS, docAppStateKey, docElementsKey } from "../app_constants";
-import { getOrCreateDocumentsIndex } from "../documents/storage";
+import {
+  STORAGE_KEYS,
+  sceneAppStateKey,
+  sceneElementsKey,
+} from "../app_constants";
+import { getOrCreateScenesIndex } from "../scenes/storage";
 
 export const saveUsernameToLocalStorage = (username: string) => {
   try {
@@ -36,20 +40,18 @@ export const importUsernameFromLocalStorage = (): string | null => {
 };
 
 export const importFromLocalStorage = () => {
-  // triggers the legacy single-scene → documents migration on first load
-  const index = getOrCreateDocumentsIndex();
-  const activeMeta = index.documents.find(
-    (doc) => doc.id === index.activeDocumentId,
+  // triggers the legacy single-scene → scenes migration on first load
+  const index = getOrCreateScenesIndex();
+  const activeMeta = index.scenes.find(
+    (scene) => scene.id === index.activeSceneId,
   );
 
   let savedElements = null;
   let savedState = null;
 
   try {
-    savedElements = localStorage.getItem(
-      docElementsKey(index.activeDocumentId),
-    );
-    savedState = localStorage.getItem(docAppStateKey(index.activeDocumentId));
+    savedElements = localStorage.getItem(sceneElementsKey(index.activeSceneId));
+    savedState = localStorage.getItem(sceneAppStateKey(index.activeSceneId));
   } catch (error: any) {
     // Unable to access localStorage
     console.error(error);
@@ -80,8 +82,8 @@ export const importFromLocalStorage = () => {
     }
   }
   if (activeMeta) {
-    // the index is the source of truth for the document name. Force it even
-    // when the doc has no persisted appState yet (e.g. a new document before
+    // the index is the source of truth for the scene name. Force it even
+    // when the scene has no persisted appState yet (e.g. a new scene before
     // its first save) so the default generated name doesn't leak into the
     // index on the next save.
     appState = { ...(appState ?? getDefaultAppState()), name: activeMeta.name };
@@ -91,9 +93,9 @@ export const importFromLocalStorage = () => {
 
 export const getElementsStorageSize = () => {
   try {
-    const index = getOrCreateDocumentsIndex();
+    const index = getOrCreateScenesIndex();
     const elements = localStorage.getItem(
-      docElementsKey(index.activeDocumentId),
+      sceneElementsKey(index.activeSceneId),
     );
     const elementsSize = elements?.length || 0;
     return elementsSize;
@@ -105,20 +107,20 @@ export const getElementsStorageSize = () => {
 
 export const getTotalStorageSize = () => {
   try {
-    const index = getOrCreateDocumentsIndex();
+    const index = getOrCreateScenesIndex();
     const indexSize =
-      localStorage.getItem(STORAGE_KEYS.LOCAL_STORAGE_DOCUMENTS_INDEX)
-        ?.length || 0;
+      localStorage.getItem(STORAGE_KEYS.LOCAL_STORAGE_SCENES_INDEX)?.length ||
+      0;
     const collab = localStorage.getItem(STORAGE_KEYS.LOCAL_STORAGE_COLLAB);
     const collabSize = collab?.length || 0;
 
-    const documentsSize = index.documents.reduce((acc, doc) => {
-      const elements = localStorage.getItem(docElementsKey(doc.id));
-      const appState = localStorage.getItem(docAppStateKey(doc.id));
+    const scenesSize = index.scenes.reduce((acc, scene) => {
+      const elements = localStorage.getItem(sceneElementsKey(scene.id));
+      const appState = localStorage.getItem(sceneAppStateKey(scene.id));
       return acc + (elements?.length || 0) + (appState?.length || 0);
     }, 0);
 
-    return indexSize + collabSize + documentsSize;
+    return indexSize + collabSize + scenesSize;
   } catch (error: any) {
     console.error(error);
     return 0;

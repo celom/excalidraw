@@ -117,12 +117,12 @@ import {
 
 import { updateStaleImageStatuses } from "./data/FileManager";
 import { FileStatusStore } from "./data/fileStatusStore";
-import { applyDocumentToScene } from "./documents/actions";
+import { applyStoredScene } from "./scenes/actions";
 import {
-  getActiveDocumentId,
-  refreshDocumentsIndexFromStorage,
-} from "./documents/state";
-import { getAllDocumentFileIds } from "./documents/storage";
+  getActiveSceneId,
+  refreshScenesIndexFromStorage,
+} from "./scenes/state";
+import { getAllSceneFileIds } from "./scenes/storage";
 import {
   importFromLocalStorage,
   importUsernameFromLocalStorage,
@@ -154,11 +154,11 @@ import "./index.scss";
 import { ExcalidrawPlusPromoBanner } from "./components/ExcalidrawPlusPromoBanner";
 import { AppSidebar } from "./components/AppSidebar";
 import {
-  AppDocumentsSidebar,
-  DOCUMENTS_SIDEBAR_NAME,
-} from "./components/AppDocumentsSidebar";
+  AppScenesSidebar,
+  SCENES_SIDEBAR_NAME,
+} from "./components/AppScenesSidebar";
 import { CollectionDashboard } from "./components/CollectionDashboard";
-import { documentsTabIcon } from "./components/DocumentsTab";
+import { scenesTabIcon } from "./components/ScenesTab";
 
 import type { CollabAPI } from "./collab/Collab";
 
@@ -522,12 +522,10 @@ const ExcalidrawWrapper = () => {
               });
           }
           // on fresh load, clear unused files from IDB (from previous
-          // session). Include files referenced by inactive documents so
-          // they don't get collected while their document sits unopened.
+          // session). Include files referenced by inactive scenes so
+          // they don't get collected while their scene sits unopened.
           LocalData.fileStorage.clearObsoleteFiles({
-            currentFileIds: [
-              ...new Set([...fileIds, ...getAllDocumentFileIds()]),
-            ],
+            currentFileIds: [...new Set([...fileIds, ...getAllSceneFileIds()])],
           });
         }
       }
@@ -582,20 +580,19 @@ const ExcalidrawWrapper = () => {
       ) {
         // don't sync if local state is newer or identical to browser state
         if (isBrowserStorageStateNewer(STORAGE_KEYS.VERSION_DATA_STATE)) {
-          const prevActiveDocumentId = getActiveDocumentId();
-          const documentsIndex = refreshDocumentsIndexFromStorage();
+          const prevActiveSceneId = getActiveSceneId();
+          const scenesIndex = refreshScenesIndexFromStorage();
           const username = importUsernameFromLocalStorage();
           setLangCode(getPreferredLanguage());
-          if (documentsIndex.activeDocumentId !== prevActiveDocumentId) {
-            // another tab switched the active document — swap the scene
+          if (scenesIndex.activeSceneId !== prevActiveSceneId) {
+            // another tab switched the active scene — swap the scene
             // (clears undo history) instead of merging state
-            LocalData.pauseSave("switchingDocument");
-            applyDocumentToScene(
-              documentsIndex.activeDocumentId,
-              excalidrawAPI,
-            ).finally(() => {
-              LocalData.resumeSave("switchingDocument");
-            });
+            LocalData.pauseSave("switchingScene");
+            applyStoredScene(scenesIndex.activeSceneId, excalidrawAPI).finally(
+              () => {
+                LocalData.resumeSave("switchingScene");
+              },
+            );
           } else {
             const localDataState = importFromLocalStorage();
             excalidrawAPI.updateScene({
@@ -984,10 +981,10 @@ const ExcalidrawWrapper = () => {
         onThemeChange={setAppTheme}
         renderTopLeftUI={() => (
           <Sidebar.Trigger
-            name={DOCUMENTS_SIDEBAR_NAME}
-            icon={documentsTabIcon}
-            title="Documents"
-            className="documents-sidebar-trigger"
+            name={SCENES_SIDEBAR_NAME}
+            icon={scenesTabIcon}
+            title="Scenes"
+            className="scenes-sidebar-trigger"
           />
         )}
         renderTopRightUI={(isMobile) => {
@@ -1099,7 +1096,7 @@ const ExcalidrawWrapper = () => {
         />
 
         <AppSidebar />
-        <AppDocumentsSidebar />
+        <AppScenesSidebar />
         <CollectionDashboard />
 
         {errorMessage && (

@@ -38,10 +38,10 @@ export const ROOM_ID_BYTES = 10;
 
 export const STORAGE_KEYS = {
   // legacy single-scene keys — kept as migration source / backup, do not
-  // write to them (see excalidraw-app/documents/storage.ts)
+  // write to them (see excalidraw-app/scenes/storage.ts)
   LOCAL_STORAGE_ELEMENTS: "excalidraw",
   LOCAL_STORAGE_APP_STATE: "excalidraw-state",
-  LOCAL_STORAGE_DOCUMENTS_INDEX: "excalidraw-documents",
+  LOCAL_STORAGE_SCENES_INDEX: "excalidraw-scenes",
   LOCAL_STORAGE_COLLAB: "excalidraw-collab",
   LOCAL_STORAGE_THEME: "excalidraw-theme",
   LOCAL_STORAGE_DEBUG: "excalidraw-debug",
@@ -55,10 +55,10 @@ export const STORAGE_KEYS = {
   __LEGACY_LOCAL_STORAGE_LIBRARY: "excalidraw-library",
 } as const;
 
-export const docElementsKey = (docId: string) =>
-  `excalidraw-doc-elements:${docId}`;
-export const docAppStateKey = (docId: string) =>
-  `excalidraw-doc-state:${docId}`;
+export const sceneElementsKey = (sceneId: string) =>
+  `excalidraw-scene-elements:${sceneId}`;
+export const sceneAppStateKey = (sceneId: string) =>
+  `excalidraw-scene-state:${sceneId}`;
 
 export const COOKIES = {
   AUTH_STATE_COOKIE: "excplus-auth",

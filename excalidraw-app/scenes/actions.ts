@@ -1,8 +1,8 @@
 /**
- * Document-level actions (create / switch / rename / duplicate / delete).
+ * Scene-level actions (create / switch / rename / duplicate / delete).
  *
  * Scene swaps follow the collab-join pattern: `resetScene()` (clears scene,
- * store and undo history — undo cannot cross documents) followed by
+ * store and undo history — undo cannot cross scenes) followed by
  * `updateScene({ captureUpdate: NEVER })`.
  */
 
@@ -21,15 +21,15 @@ import { isCollaboratingAtom } from "../collab/Collab";
 import { updateStaleImageStatuses } from "../data/FileManager";
 import { LocalData } from "../data/LocalData";
 
-import { getDocumentsIndex, setDocumentsIndex } from "./state";
-import { documentsStorage, newDocumentId } from "./storage";
+import { getScenesIndex, setScenesIndex } from "./state";
+import { scenesStorage, newSceneId } from "./storage";
 
-import type { DocumentId, DocumentsIndex } from "./storage";
+import type { SceneId, ScenesIndex } from "./storage";
 
 const isCollaborating = () => !!appJotaiStore.get(isCollaboratingAtom);
 
-const nextUntitledName = (index: DocumentsIndex) => {
-  const names = new Set(index.documents.map((doc) => doc.name));
+const nextUntitledName = (index: ScenesIndex) => {
+  const names = new Set(index.scenes.map((scene) => scene.name));
   if (!names.has("Untitled")) {
     return "Untitled";
   }
@@ -41,7 +41,7 @@ const nextUntitledName = (index: DocumentsIndex) => {
 };
 
 /** loads the given elements' image files from local IDB into the scene */
-export const loadDocumentImages = (
+export const loadSceneImages = (
   excalidrawAPI: ExcalidrawImperativeAPI,
   elements: readonly ExcalidrawElement[],
 ) => {
@@ -71,28 +71,28 @@ export const loadDocumentImages = (
 };
 
 /**
- * Replaces the scene with the given document's persisted data (load-only —
+ * Replaces the scene with the given scene's persisted data (load-only —
  * does not touch the index). Also used by cross-tab sync when another tab
- * switched the active document.
+ * switched the active scene.
  */
-export const applyDocumentToScene = async (
-  id: DocumentId,
+export const applyStoredScene = async (
+  id: SceneId,
   excalidrawAPI: ExcalidrawImperativeAPI,
 ) => {
-  const index = getDocumentsIndex();
-  const meta = index.documents.find((doc) => doc.id === id);
-  // missing doc keys ≡ empty scene (e.g. a new document before its first save)
-  const data = await documentsStorage.loadDocument(id);
+  const index = getScenesIndex();
+  const meta = index.scenes.find((scene) => scene.id === id);
+  // missing scene keys ≡ empty scene (e.g. a new scene before its first save)
+  const data = await scenesStorage.loadScene(id);
 
   const elements = restoreElements(data?.elements ?? [], null, {
     repairBindings: true,
   });
   const appState = {
     ...restoreAppState(data?.appState ?? null, null),
-    // the index is the source of truth for the document name
+    // the index is the source of truth for the scene name
     name: meta?.name ?? "Untitled",
-    // don't let the target document's persisted state slam the sidebar shut
-    // while the user is browsing documents
+    // don't let the target scene's persisted state slam the sidebar shut
+    // while the user is browsing scenes
     openSidebar: excalidrawAPI.getAppState().openSidebar,
     isLoading: false,
   };
@@ -104,85 +104,83 @@ export const applyDocumentToScene = async (
     captureUpdate: CaptureUpdateAction.NEVER,
   });
 
-  loadDocumentImages(excalidrawAPI, elements);
+  loadSceneImages(excalidrawAPI, elements);
 };
 
-export const switchToDocument = async (
-  id: DocumentId,
+export const switchToScene = async (
+  id: SceneId,
   excalidrawAPI: ExcalidrawImperativeAPI,
 ) => {
-  const index = getDocumentsIndex();
+  const index = getScenesIndex();
   if (
-    id === index.activeDocumentId ||
-    !index.documents.some((doc) => doc.id === id) ||
+    id === index.activeSceneId ||
+    !index.scenes.some((scene) => scene.id === id) ||
     isCollaborating()
   ) {
     return;
   }
 
   LocalData.flushSave();
-  LocalData.pauseSave("switchingDocument");
+  LocalData.pauseSave("switchingScene");
   try {
-    // re-read — the flush above may have bumped the outgoing doc's meta
-    setDocumentsIndex({ ...getDocumentsIndex(), activeDocumentId: id });
-    await applyDocumentToScene(id, excalidrawAPI);
+    // re-read — the flush above may have bumped the outgoing scene's meta
+    setScenesIndex({ ...getScenesIndex(), activeSceneId: id });
+    await applyStoredScene(id, excalidrawAPI);
   } finally {
-    LocalData.resumeSave("switchingDocument");
+    LocalData.resumeSave("switchingScene");
   }
 };
 
-export const createDocument = async (
-  excalidrawAPI: ExcalidrawImperativeAPI,
-) => {
+export const createScene = async (excalidrawAPI: ExcalidrawImperativeAPI) => {
   if (isCollaborating()) {
     return;
   }
-  const index = getDocumentsIndex();
+  const index = getScenesIndex();
   const now = Date.now();
   const meta = {
-    id: newDocumentId(),
+    id: newSceneId(),
     name: nextUntitledName(index),
     createdAt: now,
     updatedAt: now,
   };
 
   LocalData.flushSave();
-  LocalData.pauseSave("switchingDocument");
+  LocalData.pauseSave("switchingScene");
   try {
-    // re-read — the flush above may have bumped the outgoing doc's meta
-    const currentIndex = getDocumentsIndex();
-    setDocumentsIndex({
+    // re-read — the flush above may have bumped the outgoing scene's meta
+    const currentIndex = getScenesIndex();
+    setScenesIndex({
       ...currentIndex,
-      activeDocumentId: meta.id,
-      documents: [...currentIndex.documents, meta],
+      activeSceneId: meta.id,
+      scenes: [...currentIndex.scenes, meta],
     });
-    // no doc keys are written until the first onChange — missing keys load
+    // no scene keys are written until the first onChange — missing keys load
     // as an empty scene
-    await applyDocumentToScene(meta.id, excalidrawAPI);
+    await applyStoredScene(meta.id, excalidrawAPI);
   } finally {
-    LocalData.resumeSave("switchingDocument");
+    LocalData.resumeSave("switchingScene");
   }
 };
 
-export const renameDocument = (
-  id: DocumentId,
+export const renameScene = (
+  id: SceneId,
   name: string,
   excalidrawAPI: ExcalidrawImperativeAPI,
 ) => {
   const trimmedName = name.trim();
-  const index = getDocumentsIndex();
-  if (!trimmedName || !index.documents.some((doc) => doc.id === id)) {
+  const index = getScenesIndex();
+  if (!trimmedName || !index.scenes.some((scene) => scene.id === id)) {
     return;
   }
 
-  setDocumentsIndex({
+  setScenesIndex({
     ...index,
-    documents: index.documents.map((doc) =>
-      doc.id === id ? { ...doc, name: trimmedName } : doc,
+    scenes: index.scenes.map((scene) =>
+      scene.id === id ? { ...scene, name: trimmedName } : scene,
     ),
   });
 
-  if (id === index.activeDocumentId) {
+  if (id === index.activeSceneId) {
     excalidrawAPI.updateScene({
       appState: { name: trimmedName },
       captureUpdate: CaptureUpdateAction.NEVER,
@@ -190,25 +188,25 @@ export const renameDocument = (
   }
 };
 
-export const duplicateDocument = async (id: DocumentId) => {
-  const index = getDocumentsIndex();
-  const sourceMeta = index.documents.find((doc) => doc.id === id);
+export const duplicateScene = async (id: SceneId) => {
+  const index = getScenesIndex();
+  const sourceMeta = index.scenes.find((scene) => scene.id === id);
   if (!sourceMeta) {
     return;
   }
 
-  if (id === index.activeDocumentId) {
+  if (id === index.activeSceneId) {
     // make sure the copy includes the latest scene
     LocalData.flushSave();
   }
 
-  const data = await documentsStorage.loadDocument(id);
-  const newId = newDocumentId();
+  const data = await scenesStorage.loadScene(id);
+  const newId = newSceneId();
   if (data) {
     try {
       // images need zero work — content-addressed fileIds in the shared IDB
-      // store are shared between documents
-      await documentsStorage.saveDocument(newId, {
+      // store are shared between scenes
+      await scenesStorage.saveScene(newId, {
         elements: data.elements,
         appState: data.appState ?? {},
       });
@@ -219,11 +217,11 @@ export const duplicateDocument = async (id: DocumentId) => {
   }
 
   const now = Date.now();
-  const currentIndex = getDocumentsIndex();
-  setDocumentsIndex({
+  const currentIndex = getScenesIndex();
+  setScenesIndex({
     ...currentIndex,
-    documents: [
-      ...currentIndex.documents,
+    scenes: [
+      ...currentIndex.scenes,
       {
         id: newId,
         name: `${sourceMeta.name} (copy)`,
@@ -234,22 +232,22 @@ export const duplicateDocument = async (id: DocumentId) => {
   });
 };
 
-export const deleteDocument = async (
-  id: DocumentId,
+export const deleteScene = async (
+  id: SceneId,
   excalidrawAPI: ExcalidrawImperativeAPI,
 ) => {
-  const index = getDocumentsIndex();
-  const docPosition = index.documents.findIndex((doc) => doc.id === id);
-  if (docPosition === -1) {
+  const index = getScenesIndex();
+  const scenePosition = index.scenes.findIndex((scene) => scene.id === id);
+  if (scenePosition === -1) {
     return;
   }
 
-  if (id !== index.activeDocumentId) {
-    setDocumentsIndex({
+  if (id !== index.activeSceneId) {
+    setScenesIndex({
       ...index,
-      documents: index.documents.filter((doc) => doc.id !== id),
+      scenes: index.scenes.filter((scene) => scene.id !== id),
     });
-    await documentsStorage.deleteDocument(id);
+    await scenesStorage.deleteScene(id);
     // orphaned images age out via the 24h rule at next startup
     return;
   }
@@ -258,33 +256,33 @@ export const deleteDocument = async (
     return;
   }
 
-  // drop pending writes of the doc being deleted — don't flush them
+  // drop pending writes of the scene being deleted — don't flush them
   LocalData.cancelSave();
 
-  let documents = index.documents.filter((doc) => doc.id !== id);
-  let fallbackId: DocumentId;
-  if (documents.length) {
+  let scenes = index.scenes.filter((scene) => scene.id !== id);
+  let fallbackId: SceneId;
+  if (scenes.length) {
     fallbackId = (
-      index.documents[docPosition + 1] ?? index.documents[docPosition - 1]
+      index.scenes[scenePosition + 1] ?? index.scenes[scenePosition - 1]
     ).id;
   } else {
     const now = Date.now();
     const fresh = {
-      id: newDocumentId(),
+      id: newSceneId(),
       name: "Untitled",
       createdAt: now,
       updatedAt: now,
     };
-    documents = [fresh];
+    scenes = [fresh];
     fallbackId = fresh.id;
   }
 
-  LocalData.pauseSave("switchingDocument");
+  LocalData.pauseSave("switchingScene");
   try {
-    setDocumentsIndex({ ...index, activeDocumentId: fallbackId, documents });
-    await documentsStorage.deleteDocument(id);
-    await applyDocumentToScene(fallbackId, excalidrawAPI);
+    setScenesIndex({ ...index, activeSceneId: fallbackId, scenes });
+    await scenesStorage.deleteScene(id);
+    await applyStoredScene(fallbackId, excalidrawAPI);
   } finally {
-    LocalData.resumeSave("switchingDocument");
+    LocalData.resumeSave("switchingScene");
   }
 };

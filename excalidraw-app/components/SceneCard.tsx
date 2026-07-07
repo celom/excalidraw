@@ -20,18 +20,18 @@ import type { FileId } from "@excalidraw/element/types";
 import type { BinaryFiles } from "@excalidraw/excalidraw/types";
 
 import { LocalData } from "../data/LocalData";
-import { DOCUMENT_DRAG_MIME } from "../documents/collections";
-import { loadDocumentSync } from "../documents/storage";
+import { SCENE_DRAG_MIME } from "../scenes/collections";
+import { loadSceneSync } from "../scenes/storage";
 
-import { documentsTabIcon } from "./DocumentsTab";
+import { scenesTabIcon } from "./ScenesTab";
 
-import type { DocumentMeta } from "../documents/storage";
+import type { SceneMeta } from "../scenes/storage";
 
 // rendered at 2x for retina
 const CARD_PREVIEW_SIZE = 240;
 const PREVIEW_PADDING = 8;
 
-export const DocumentCard = ({
+export const SceneCard = ({
   meta,
   isActive,
   disabled,
@@ -42,7 +42,7 @@ export const DocumentCard = ({
   onDuplicate,
   onDeleteRequest,
 }: {
-  meta: DocumentMeta;
+  meta: SceneMeta;
   isActive: boolean;
   disabled: boolean;
   isRenaming: boolean;
@@ -90,7 +90,7 @@ export const DocumentCard = ({
     const isStale = () => cancelled;
 
     const renderPreview = async () => {
-      const data = loadDocumentSync(meta.id);
+      const data = loadSceneSync(meta.id);
       const elements = data?.elements.filter((element) => !element.isDeleted);
       if (!elements?.length) {
         setPreviewStatus("empty");
@@ -168,14 +168,14 @@ export const DocumentCard = ({
 
   return (
     <div
-      className={clsx("document-card", {
-        "document-card--active": isActive,
-        "document-card--disabled": disabled,
+      className={clsx("scene-card", {
+        "scene-card--active": isActive,
+        "scene-card--disabled": disabled,
       })}
       // dragging interferes with text selection in the rename input
       draggable={!disabled && !isRenaming}
       onDragStart={(event) => {
-        event.dataTransfer.setData(DOCUMENT_DRAG_MIME, meta.id);
+        event.dataTransfer.setData(SCENE_DRAG_MIME, meta.id);
         event.dataTransfer.effectAllowed = "move";
       }}
       onClick={() => {
@@ -184,27 +184,25 @@ export const DocumentCard = ({
         }
       }}
     >
-      <div className="document-card__preview">
+      <div className="scene-card__preview">
         <div
           ref={canvasHostRef}
-          className={clsx("document-card__preview-canvas", {
-            "document-card__preview-canvas--hidden": previewStatus !== "ready",
+          className={clsx("scene-card__preview-canvas", {
+            "scene-card__preview-canvas--hidden": previewStatus !== "ready",
           })}
         />
         {previewStatus === "empty" && (
-          <div className="document-card__preview-fallback">Empty</div>
+          <div className="scene-card__preview-fallback">Empty</div>
         )}
         {previewStatus === "error" && (
-          <div className="document-card__preview-fallback">
-            {documentsTabIcon}
-          </div>
+          <div className="scene-card__preview-fallback">{scenesTabIcon}</div>
         )}
       </div>
-      <div className="document-card__menu-container" ref={menuRef}>
+      <div className="scene-card__menu-container" ref={menuRef}>
         <button
           type="button"
-          className={clsx("document-card__menu-button", {
-            "document-card__menu-button--open": isMenuOpen,
+          className={clsx("scene-card__menu-button", {
+            "scene-card__menu-button--open": isMenuOpen,
           })}
           title="More actions"
           onClick={(event) => {
@@ -216,7 +214,7 @@ export const DocumentCard = ({
         </button>
         {isMenuOpen && (
           <div
-            className="document-card__menu"
+            className="scene-card__menu"
             onClick={(event) => event.stopPropagation()}
           >
             <button
@@ -241,7 +239,7 @@ export const DocumentCard = ({
             </button>
             <button
               type="button"
-              className="document-card__menu-item--danger"
+              className="scene-card__menu-item--danger"
               disabled={isActive && disabled}
               onClick={() => {
                 setIsMenuOpen(false);
@@ -254,11 +252,11 @@ export const DocumentCard = ({
           </div>
         )}
       </div>
-      <div className="document-card__name">
+      <div className="scene-card__name">
         {isRenaming ? (
           <input
             ref={renameInputRef}
-            className="document-card__rename-input"
+            className="scene-card__rename-input"
             defaultValue={meta.name}
             onClick={(event) => event.stopPropagation()}
             onBlur={() =>
@@ -273,10 +271,7 @@ export const DocumentCard = ({
         ) : (
           <>
             {isActive && (
-              <span
-                className="document-card__active-dot"
-                title="Active document"
-              />
+              <span className="scene-card__active-dot" title="Active scene" />
             )}
             {meta.name}
           </>

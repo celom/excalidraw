@@ -5,22 +5,22 @@ import { useState } from "react";
 
 import { useAtomValue, useSetAtom } from "../app-jotai";
 import { isCollaboratingAtom } from "../collab/Collab";
-import { createDocument, switchToDocument } from "../documents/actions";
+import { createScene, switchToScene } from "../scenes/actions";
 import {
-  DOCUMENT_DRAG_MIME,
-  assignDocumentToCollection,
+  SCENE_DRAG_MIME,
+  assignSceneToCollection,
   createCollection,
   getCollections,
-} from "../documents/collections";
+} from "../scenes/collections";
 import {
   ROOT_COLLECTION_ID,
-  documentsIndexAtom,
+  scenesIndexAtom,
   openCollectionIdAtom,
-} from "../documents/state";
+} from "../scenes/state";
 
-import "./DocumentsTab.scss";
+import "./ScenesTab.scss";
 
-import type { OpenCollectionId } from "../documents/state";
+import type { OpenCollectionId } from "../scenes/state";
 
 const MS_IN_MINUTE = 60 * 1000;
 const RELATIVE_TIME_UNITS: [number, Intl.RelativeTimeFormatUnit][] = [
@@ -43,9 +43,9 @@ const formatRelativeTime = (timestamp: number) => {
   return "just now";
 };
 
-export const DocumentsTab = () => {
+export const ScenesTab = () => {
   const excalidrawAPI = useExcalidrawAPI();
-  const documentsIndex = useAtomValue(documentsIndexAtom);
+  const scenesIndex = useAtomValue(scenesIndexAtom);
   const isCollaborating = useAtomValue(isCollaboratingAtom);
   const setOpenCollectionId = useSetAtom(openCollectionIdAtom);
 
@@ -57,16 +57,16 @@ export const DocumentsTab = () => {
     return null;
   }
 
-  const collections = [...getCollections(documentsIndex)].sort(
+  const collections = [...getCollections(scenesIndex)].sort(
     (a, b) => a.createdAt - b.createdAt,
   );
-  const documents = [...documentsIndex.documents].sort(
+  const scenes = [...scenesIndex.scenes].sort(
     (a, b) => b.updatedAt - a.updatedAt,
   );
 
   const collectionDropHandlers = (target: OpenCollectionId) => ({
     onDragOver: (event: React.DragEvent) => {
-      if (event.dataTransfer.types.includes(DOCUMENT_DRAG_MIME)) {
+      if (event.dataTransfer.types.includes(SCENE_DRAG_MIME)) {
         event.preventDefault();
         event.dataTransfer.dropEffect = "move";
         setDropTargetId(target);
@@ -81,10 +81,10 @@ export const DocumentsTab = () => {
     onDrop: (event: React.DragEvent) => {
       event.preventDefault();
       setDropTargetId(null);
-      const docId = event.dataTransfer.getData(DOCUMENT_DRAG_MIME);
-      if (docId) {
-        assignDocumentToCollection(
-          docId,
+      const sceneId = event.dataTransfer.getData(SCENE_DRAG_MIME);
+      if (sceneId) {
+        assignSceneToCollection(
+          sceneId,
           target === ROOT_COLLECTION_ID ? null : target,
         );
       }
@@ -92,26 +92,26 @@ export const DocumentsTab = () => {
   });
 
   return (
-    <div className="documents-tab">
-      <div className="documents-tab__header">
-        <div className="documents-tab__title">Documents</div>
+    <div className="scenes-tab">
+      <div className="scenes-tab__header">
+        <div className="scenes-tab__title">Scenes</div>
         <button
           type="button"
-          className="documents-tab__new-button"
-          onClick={() => createDocument(excalidrawAPI)}
+          className="scenes-tab__new-button"
+          onClick={() => createScene(excalidrawAPI)}
           disabled={isCollaborating}
-          title="New document"
+          title="New scene"
         >
           {PlusIcon}
           New
         </button>
       </div>
       {isCollaborating && (
-        <div className="documents-tab__hint">
-          Switching documents is disabled during a live collaboration session.
+        <div className="scenes-tab__hint">
+          Switching scenes is disabled during a live collaboration session.
         </div>
       )}
-      <div className="documents-tab__section-header">
+      <div className="scenes-tab__section-header">
         Collections
         <button
           type="button"
@@ -124,16 +124,16 @@ export const DocumentsTab = () => {
           {PlusIcon}
         </button>
       </div>
-      <div className="documents-tab__collections">
+      <div className="scenes-tab__collections">
         <div
-          className={clsx("documents-tab__collection", {
-            "documents-tab__collection--drop-target":
+          className={clsx("scenes-tab__collection", {
+            "scenes-tab__collection--drop-target":
               dropTargetId === ROOT_COLLECTION_ID,
           })}
           onClick={() => setOpenCollectionId(ROOT_COLLECTION_ID)}
           {...collectionDropHandlers(ROOT_COLLECTION_ID)}
         >
-          <div className="documents-tab__collection-name">
+          <div className="scenes-tab__collection-name">
             {folderIcon}
             Dashboard
           </div>
@@ -141,55 +141,55 @@ export const DocumentsTab = () => {
         {collections.map((collection) => (
           <div
             key={collection.id}
-            className={clsx("documents-tab__collection", {
-              "documents-tab__collection--drop-target":
+            className={clsx("scenes-tab__collection", {
+              "scenes-tab__collection--drop-target":
                 dropTargetId === collection.id,
             })}
             onClick={() => setOpenCollectionId(collection.id)}
             {...collectionDropHandlers(collection.id)}
           >
-            <div className="documents-tab__collection-name">
+            <div className="scenes-tab__collection-name">
               {folderIcon}
               {collection.name}
             </div>
           </div>
         ))}
       </div>
-      <div className="documents-tab__section-header">All documents</div>
-      <div className="documents-tab__list">
-        {documents.map((doc) => {
-          const isActive = doc.id === documentsIndex.activeDocumentId;
+      <div className="scenes-tab__section-header">All scenes</div>
+      <div className="scenes-tab__list">
+        {scenes.map((scene) => {
+          const isActive = scene.id === scenesIndex.activeSceneId;
           const switchDisabled = isCollaborating || isActive;
           return (
             <div
-              key={doc.id}
-              className={clsx("documents-tab__item", {
-                "documents-tab__item--active": isActive,
-                "documents-tab__item--disabled": isCollaborating && !isActive,
+              key={scene.id}
+              className={clsx("scenes-tab__item", {
+                "scenes-tab__item--active": isActive,
+                "scenes-tab__item--disabled": isCollaborating && !isActive,
               })}
               draggable
               onDragStart={(event) => {
-                event.dataTransfer.setData(DOCUMENT_DRAG_MIME, doc.id);
+                event.dataTransfer.setData(SCENE_DRAG_MIME, scene.id);
                 event.dataTransfer.effectAllowed = "move";
               }}
               onClick={() => {
                 if (!switchDisabled) {
-                  switchToDocument(doc.id, excalidrawAPI);
+                  switchToScene(scene.id, excalidrawAPI);
                 }
               }}
             >
-              <div className="documents-tab__item-info">
-                <div className="documents-tab__item-name">
+              <div className="scenes-tab__item-info">
+                <div className="scenes-tab__item-name">
                   {isActive && (
                     <span
-                      className="documents-tab__active-dot"
-                      title="Active document"
+                      className="scenes-tab__active-dot"
+                      title="Active scene"
                     />
                   )}
-                  {doc.name}
+                  {scene.name}
                 </div>
-                <div className="documents-tab__item-time">
-                  {formatRelativeTime(doc.updatedAt)}
+                <div className="scenes-tab__item-time">
+                  {formatRelativeTime(scene.updatedAt)}
                 </div>
               </div>
             </div>
@@ -201,7 +201,7 @@ export const DocumentsTab = () => {
 };
 
 // tabler-icons: files (no fitting icon in the editor package)
-export const documentsTabIcon = (
+export const scenesTabIcon = (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     viewBox="0 0 24 24"

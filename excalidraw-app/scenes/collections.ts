@@ -3,36 +3,36 @@
  *
  * Collections are pure index metadata — none of these touch the scene, so
  * there's no collab gating and no save pausing. Persistence and cross-tab
- * notification are handled by `setDocumentsIndex`'s write-through.
+ * notification are handled by `setScenesIndex`'s write-through.
  */
 
-import { getDocumentsIndex, setDocumentsIndex } from "./state";
-import { newDocumentId } from "./storage";
+import { getScenesIndex, setScenesIndex } from "./state";
+import { newSceneId } from "./storage";
 
 import type {
   CollectionId,
   CollectionMeta,
-  DocumentId,
-  DocumentMeta,
-  DocumentsIndex,
+  SceneId,
+  SceneMeta,
+  ScenesIndex,
 } from "./storage";
 
-/** dataTransfer type for document drags */
-export const DOCUMENT_DRAG_MIME = "application/x-excalidraw-document-id";
+/** dataTransfer type for scene drags */
+export const SCENE_DRAG_MIME = "application/x-excalidraw-scene-id";
 
-export const getCollections = (index: DocumentsIndex): CollectionMeta[] =>
+export const getCollections = (index: ScenesIndex): CollectionMeta[] =>
   index.collections ?? [];
 
 /** dangling refs (e.g. collection deleted by another tab) resolve to root */
-export const getDocumentCollectionId = (
-  doc: DocumentMeta,
+export const getSceneCollectionId = (
+  scene: SceneMeta,
   collections: CollectionMeta[],
 ): CollectionId | null =>
-  doc.collectionId && collections.some((c) => c.id === doc.collectionId)
-    ? doc.collectionId
+  scene.collectionId && collections.some((c) => c.id === scene.collectionId)
+    ? scene.collectionId
     : null;
 
-const nextCollectionName = (index: DocumentsIndex) => {
+const nextCollectionName = (index: ScenesIndex) => {
   const names = new Set(getCollections(index).map((c) => c.name));
   if (!names.has("New collection")) {
     return "New collection";
@@ -46,13 +46,13 @@ const nextCollectionName = (index: DocumentsIndex) => {
 
 /** returns the new meta so the caller can start an inline rename */
 export const createCollection = (): CollectionMeta => {
-  const index = getDocumentsIndex();
+  const index = getScenesIndex();
   const meta: CollectionMeta = {
-    id: newDocumentId(),
+    id: newSceneId(),
     name: nextCollectionName(index),
     createdAt: Date.now(),
   };
-  setDocumentsIndex({
+  setScenesIndex({
     ...index,
     collections: [...getCollections(index), meta],
   });
@@ -61,11 +61,11 @@ export const createCollection = (): CollectionMeta => {
 
 export const renameCollection = (id: CollectionId, name: string) => {
   const trimmedName = name.trim();
-  const index = getDocumentsIndex();
+  const index = getScenesIndex();
   if (!trimmedName || !getCollections(index).some((c) => c.id === id)) {
     return;
   }
-  setDocumentsIndex({
+  setScenesIndex({
     ...index,
     collections: getCollections(index).map((c) =>
       c.id === id ? { ...c, name: trimmedName } : c,
@@ -73,39 +73,39 @@ export const renameCollection = (id: CollectionId, name: string) => {
   });
 };
 
-/** contained documents move back to the root "Dashboard" */
+/** contained scenes move back to the root "Dashboard" */
 export const deleteCollection = (id: CollectionId) => {
-  const index = getDocumentsIndex();
+  const index = getScenesIndex();
   if (!getCollections(index).some((c) => c.id === id)) {
     return;
   }
-  setDocumentsIndex({
+  setScenesIndex({
     ...index,
     collections: getCollections(index).filter((c) => c.id !== id),
-    documents: index.documents.map((doc) =>
-      doc.collectionId === id ? { ...doc, collectionId: null } : doc,
+    scenes: index.scenes.map((scene) =>
+      scene.collectionId === id ? { ...scene, collectionId: null } : scene,
     ),
   });
 };
 
-export const assignDocumentToCollection = (
-  docId: DocumentId,
+export const assignSceneToCollection = (
+  sceneId: SceneId,
   collectionId: CollectionId | null,
 ) => {
-  const index = getDocumentsIndex();
-  const doc = index.documents.find((d) => d.id === docId);
+  const index = getScenesIndex();
+  const scene = index.scenes.find((d) => d.id === sceneId);
   if (
-    !doc ||
-    getDocumentCollectionId(doc, getCollections(index)) === collectionId ||
+    !scene ||
+    getSceneCollectionId(scene, getCollections(index)) === collectionId ||
     (collectionId !== null &&
       !getCollections(index).some((c) => c.id === collectionId))
   ) {
     return;
   }
-  setDocumentsIndex({
+  setScenesIndex({
     ...index,
-    documents: index.documents.map((d) =>
-      d.id === docId ? { ...d, collectionId } : d,
+    scenes: index.scenes.map((d) =>
+      d.id === sceneId ? { ...d, collectionId } : d,
     ),
   });
 };

@@ -13,47 +13,47 @@ import { useAtom, useAtomValue } from "../app-jotai";
 import { isCollaboratingAtom } from "../collab/Collab";
 import { LocalData } from "../data/LocalData";
 import {
-  deleteDocument,
-  duplicateDocument,
-  renameDocument,
-  switchToDocument,
-} from "../documents/actions";
+  deleteScene,
+  duplicateScene,
+  renameScene,
+  switchToScene,
+} from "../scenes/actions";
 import {
   deleteCollection,
   getCollections,
-  getDocumentCollectionId,
+  getSceneCollectionId,
   renameCollection,
-} from "../documents/collections";
+} from "../scenes/collections";
 import {
   ROOT_COLLECTION_ID,
-  documentsIndexAtom,
+  scenesIndexAtom,
   openCollectionIdAtom,
-} from "../documents/state";
+} from "../scenes/state";
 
-import { DOCUMENTS_SIDEBAR_NAME } from "./AppDocumentsSidebar";
-import { DocumentCard } from "./DocumentCard";
+import { SCENES_SIDEBAR_NAME } from "./AppScenesSidebar";
+import { SceneCard } from "./SceneCard";
 
 import "./CollectionDashboard.scss";
 
-import type { DocumentId } from "../documents/storage";
+import type { SceneId } from "../scenes/storage";
 
 export const CollectionDashboard = () => {
   const excalidrawAPI = useExcalidrawAPI();
   const [openCollectionId, setOpenCollectionId] = useAtom(openCollectionIdAtom);
-  const documentsIndex = useAtomValue(documentsIndexAtom);
+  const scenesIndex = useAtomValue(scenesIndexAtom);
   const isCollaborating = useAtomValue(isCollaboratingAtom);
   // the sidebar stacks above the overlay — inset the overlay so its content
   // isn't hidden underneath
-  const isDocumentsSidebarOpen =
-    useUIAppState().openSidebar?.name === DOCUMENTS_SIDEBAR_NAME;
+  const isScenesSidebarOpen =
+    useUIAppState().openSidebar?.name === SCENES_SIDEBAR_NAME;
 
   const [isRenaming, setIsRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState("");
   const [isPendingDelete, setIsPendingDelete] = useState(false);
 
-  const [renamingDocId, setRenamingDocId] = useState<DocumentId | null>(null);
-  const [pendingDeleteDocId, setPendingDeleteDocId] =
-    useState<DocumentId | null>(null);
+  const [renamingSceneId, setRenamingSceneId] = useState<SceneId | null>(null);
+  const [pendingDeleteSceneId, setPendingDeleteSceneId] =
+    useState<SceneId | null>(null);
 
   const renameInputRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
@@ -63,7 +63,7 @@ export const CollectionDashboard = () => {
   }, [isRenaming]);
 
   const isOpen = openCollectionId !== null;
-  const collections = getCollections(documentsIndex);
+  const collections = getCollections(scenesIndex);
   const collection =
     openCollectionId !== null && openCollectionId !== ROOT_COLLECTION_ID
       ? collections.find((c) => c.id === openCollectionId)
@@ -81,33 +81,33 @@ export const CollectionDashboard = () => {
   useEffect(() => {
     setIsRenaming(false);
     setIsPendingDelete(false);
-    setRenamingDocId(null);
-    setPendingDeleteDocId(null);
+    setRenamingSceneId(null);
+    setPendingDeleteSceneId(null);
   }, [openCollectionId]);
 
   useEffect(() => {
     if (!isOpen) {
       return;
     }
-    // persist the active document's pending debounced save so its card
+    // persist the active scene's pending debounced save so its card
     // snapshot is up to date
     LocalData.flushSave();
 
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        // capture on window runs before the editor's document-level handler,
+        // capture on window runs before the editor's scene-level handler,
         // so the canvas doesn't also react
         event.stopPropagation();
         if (isRenaming) {
           // it also runs before the rename input's own handler — cancel the
           // rename instead of closing the dashboard
           setIsRenaming(false);
-        } else if (renamingDocId) {
-          setRenamingDocId(null);
+        } else if (renamingSceneId) {
+          setRenamingSceneId(null);
         } else if (isPendingDelete) {
           setIsPendingDelete(false);
-        } else if (pendingDeleteDocId) {
-          setPendingDeleteDocId(null);
+        } else if (pendingDeleteSceneId) {
+          setPendingDeleteSceneId(null);
         } else {
           setOpenCollectionId(null);
         }
@@ -121,8 +121,8 @@ export const CollectionDashboard = () => {
     isOpen,
     isRenaming,
     isPendingDelete,
-    renamingDocId,
-    pendingDeleteDocId,
+    renamingSceneId,
+    pendingDeleteSceneId,
     setOpenCollectionId,
   ]);
 
@@ -137,14 +137,14 @@ export const CollectionDashboard = () => {
     setIsRenaming(false);
   };
 
-  const pendingDeleteDoc = documentsIndex.documents.find(
-    (doc) => doc.id === pendingDeleteDocId,
+  const pendingDeleteScene = scenesIndex.scenes.find(
+    (scene) => scene.id === pendingDeleteSceneId,
   );
 
-  const documents = documentsIndex.documents
+  const scenes = scenesIndex.scenes
     .filter(
-      (doc) =>
-        getDocumentCollectionId(doc, collections) ===
+      (scene) =>
+        getSceneCollectionId(scene, collections) ===
         (openCollectionId === ROOT_COLLECTION_ID ? null : openCollectionId),
     )
     .sort((a, b) => b.updatedAt - a.updatedAt);
@@ -152,9 +152,9 @@ export const CollectionDashboard = () => {
   return (
     <div
       className={clsx("collection-dashboard", {
-        "collection-dashboard--sidebar-open": isDocumentsSidebarOpen,
+        "collection-dashboard--sidebar-open": isScenesSidebarOpen,
       })}
-      // keep the (undocked) documents sidebar open while interacting with
+      // keep the (undocked) scenes sidebar open while interacting with
       // the dashboard — also avoids the layout shift swallowing the click
       data-prevent-outside-click
     >
@@ -213,48 +213,48 @@ export const CollectionDashboard = () => {
       </div>
       {isCollaborating && (
         <div className="collection-dashboard__hint">
-          Switching documents is disabled during a live collaboration session.
+          Switching scenes is disabled during a live collaboration session.
         </div>
       )}
       <div className="collection-dashboard__grid">
-        {documents.map((doc) => (
-          <DocumentCard
-            key={doc.id}
-            meta={doc}
-            isActive={doc.id === documentsIndex.activeDocumentId}
+        {scenes.map((scene) => (
+          <SceneCard
+            key={scene.id}
+            meta={scene}
+            isActive={scene.id === scenesIndex.activeSceneId}
             disabled={isCollaborating}
-            isRenaming={doc.id === renamingDocId}
+            isRenaming={scene.id === renamingSceneId}
             onOpen={() => {
-              switchToDocument(doc.id, excalidrawAPI);
+              switchToScene(scene.id, excalidrawAPI);
               setOpenCollectionId(null);
             }}
-            onRenameStart={() => setRenamingDocId(doc.id)}
+            onRenameStart={() => setRenamingSceneId(scene.id)}
             onRenameCommit={(name) => {
-              renameDocument(doc.id, name, excalidrawAPI);
-              setRenamingDocId(null);
+              renameScene(scene.id, name, excalidrawAPI);
+              setRenamingSceneId(null);
             }}
-            onDuplicate={() => duplicateDocument(doc.id)}
-            onDeleteRequest={() => setPendingDeleteDocId(doc.id)}
+            onDuplicate={() => duplicateScene(scene.id)}
+            onDeleteRequest={() => setPendingDeleteSceneId(scene.id)}
           />
         ))}
-        {!documents.length && (
+        {!scenes.length && (
           <div className="collection-dashboard__empty">
-            No documents in this collection.
+            No scenes in this collection.
           </div>
         )}
       </div>
-      {pendingDeleteDoc && (
+      {pendingDeleteScene && (
         <ConfirmDialog
-          title="Delete document"
+          title="Delete scene"
           onConfirm={() => {
-            deleteDocument(pendingDeleteDoc.id, excalidrawAPI);
-            setPendingDeleteDocId(null);
+            deleteScene(pendingDeleteScene.id, excalidrawAPI);
+            setPendingDeleteSceneId(null);
           }}
-          onCancel={() => setPendingDeleteDocId(null)}
+          onCancel={() => setPendingDeleteSceneId(null)}
         >
           <p>
-            Are you sure you want to delete <b>{pendingDeleteDoc.name}</b>? This
-            cannot be undone.
+            Are you sure you want to delete <b>{pendingDeleteScene.name}</b>?
+            This cannot be undone.
           </p>
         </ConfirmDialog>
       )}
@@ -269,8 +269,8 @@ export const CollectionDashboard = () => {
           onCancel={() => setIsPendingDelete(false)}
         >
           <p>
-            Are you sure you want to delete <b>{collection.name}</b>? Its
-            documents will move back to Dashboard.
+            Are you sure you want to delete <b>{collection.name}</b>? Its scenes
+            will move back to Dashboard.
           </p>
         </ConfirmDialog>
       )}

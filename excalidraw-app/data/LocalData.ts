@@ -41,18 +41,18 @@ import type { MaybePromise } from "@excalidraw/common/utility-types";
 import { appJotaiStore, atom } from "../app-jotai";
 import { SAVE_TO_LOCAL_STORAGE_TIMEOUT, STORAGE_KEYS } from "../app_constants";
 import {
-  getActiveDocumentId,
-  getDocumentsIndex,
-  setDocumentsIndex,
-} from "../documents/state";
-import { saveDocumentSync } from "../documents/storage";
+  getActiveSceneId,
+  getScenesIndex,
+  setScenesIndex,
+} from "../scenes/state";
+import { saveSceneSync } from "../scenes/storage";
 
 import { FileManager } from "./FileManager";
 import { FileStatusStore } from "./fileStatusStore";
 import { Locker } from "./Locker";
 import { updateBrowserStateVersion } from "./tabSync";
 
-import type { DocumentId } from "../documents/storage";
+import type { SceneId } from "../scenes/storage";
 
 const filesStore = createStore("files-db", "files-store");
 
@@ -79,7 +79,7 @@ class LocalFileManager extends FileManager {
 }
 
 const saveDataStateToLocalStorage = (
-  docId: DocumentId,
+  sceneId: SceneId,
   elements: readonly ExcalidrawElement[],
   appState: AppState,
 ) => {
@@ -87,9 +87,9 @@ const saveDataStateToLocalStorage = (
     localStorageQuotaExceededAtom,
   );
   try {
-    const index = getDocumentsIndex();
-    if (!index.documents.some((doc) => doc.id === docId)) {
-      // document was deleted while this save was pending — don't write
+    const index = getScenesIndex();
+    if (!index.scenes.some((scene) => scene.id === sceneId)) {
+      // scene was deleted while this save was pending — don't write
       // orphaned keys
       return;
     }
@@ -103,23 +103,23 @@ const saveDataStateToLocalStorage = (
       _appState.openSidebar = null;
     }
 
-    saveDocumentSync(docId, {
+    saveSceneSync(sceneId, {
       elements: getNonDeletedElements(elements),
       appState: _appState,
     });
 
-    setDocumentsIndex({
+    setScenesIndex({
       ...index,
-      documents: index.documents.map((doc) =>
-        doc.id === docId
+      scenes: index.scenes.map((scene) =>
+        scene.id === sceneId
           ? {
-              ...doc,
+              ...scene,
               // appState.name is synced back so renames via the export
               // dialog's ProjectName field flow into the index
-              name: appState.name || doc.name,
+              name: appState.name || scene.name,
               updatedAt: Date.now(),
             }
-          : doc,
+          : scene,
       ),
     });
 
@@ -140,20 +140,20 @@ const isQuotaExceededError = (error: any) => {
   return error instanceof DOMException && error.name === "QuotaExceededError";
 };
 
-type SavingLockTypes = "collaboration" | "switchingDocument";
+type SavingLockTypes = "collaboration" | "switchingScene";
 
 export class LocalData {
   private static _save = debounce(
     async (
-      // the target document is captured at schedule time so a document
+      // the target scene is captured at schedule time so a scene
       // switch can never redirect a pending save to the wrong keys
-      docId: DocumentId,
+      sceneId: SceneId,
       elements: readonly ExcalidrawElement[],
       appState: AppState,
       files: BinaryFiles,
       onFilesSaved: () => void,
     ) => {
-      saveDataStateToLocalStorage(docId, elements, appState);
+      saveDataStateToLocalStorage(sceneId, elements, appState);
 
       await this.fileStorage.saveFiles({
         elements,
@@ -173,13 +173,7 @@ export class LocalData {
   ) => {
     // we need to make the `isSavePaused` check synchronously (undebounced)
     if (!this.isSavePaused()) {
-      this._save(
-        getActiveDocumentId(),
-        elements,
-        appState,
-        files,
-        onFilesSaved,
-      );
+      this._save(getActiveSceneId(), elements, appState, files, onFilesSaved);
     }
   };
 
