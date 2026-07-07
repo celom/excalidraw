@@ -22,17 +22,29 @@ import { STORAGE_KEYS, docAppStateKey, docElementsKey } from "../app_constants";
 
 export type DocumentId = string;
 
+export type CollectionId = string;
+
+export type CollectionMeta = {
+  id: CollectionId;
+  name: string;
+  createdAt: number;
+};
+
 export type DocumentMeta = {
   id: DocumentId;
   name: string;
   createdAt: number;
   updatedAt: number;
+  /** missing/null ≡ root "Dashboard" collection */
+  collectionId?: CollectionId | null;
 };
 
 export type DocumentsIndex = {
   version: 1;
   activeDocumentId: DocumentId;
   documents: DocumentMeta[];
+  /** optional — absent on indexes written before collections existed */
+  collections?: CollectionMeta[];
 };
 
 export type DocumentData = {
@@ -68,7 +80,8 @@ const isValidIndex = (data: any): data is DocumentsIndex => {
     Array.isArray(data.documents) &&
     data.documents.some(
       (doc: DocumentMeta) => doc?.id === data.activeDocumentId,
-    )
+    ) &&
+    (data.collections === undefined || Array.isArray(data.collections))
   );
 };
 

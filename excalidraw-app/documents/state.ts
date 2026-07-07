@@ -4,13 +4,20 @@ import { updateBrowserStateVersion } from "../data/tabSync";
 
 import { getOrCreateDocumentsIndex, saveIndexSync } from "./storage";
 
-import type { DocumentId, DocumentsIndex } from "./storage";
+import type { CollectionId, DocumentId, DocumentsIndex } from "./storage";
 
 /** in-memory mirror of the persisted documents index (runs the legacy-scene
  * migration on first evaluation) */
 export const documentsIndexAtom = atom<DocumentsIndex>(
   getOrCreateDocumentsIndex(),
 );
+
+// safe sentinel — real collection ids are UUIDs
+export const ROOT_COLLECTION_ID = "root" as const;
+export type OpenCollectionId = CollectionId | typeof ROOT_COLLECTION_ID;
+
+/** which collection dashboard overlay is open (null = closed) */
+export const openCollectionIdAtom = atom<OpenCollectionId | null>(null);
 
 export const getDocumentsIndex = (): DocumentsIndex => {
   return appJotaiStore.get(documentsIndexAtom) ?? getOrCreateDocumentsIndex();

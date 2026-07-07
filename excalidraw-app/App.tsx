@@ -157,6 +157,7 @@ import {
   AppDocumentsSidebar,
   DOCUMENTS_SIDEBAR_NAME,
 } from "./components/AppDocumentsSidebar";
+import { CollectionDashboard } from "./components/CollectionDashboard";
 import { documentsTabIcon } from "./components/DocumentsTab";
 
 import type { CollabAPI } from "./collab/Collab";
@@ -1099,6 +1100,7 @@ const ExcalidrawWrapper = () => {
 
         <AppSidebar />
         <AppDocumentsSidebar />
+        <CollectionDashboard />
 
         {errorMessage && (
           <ErrorDialog onClose={() => setErrorMessage("")}>
