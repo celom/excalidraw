@@ -12,6 +12,7 @@ import {
   assignSceneToCollection,
   createCollection,
   getCollections,
+  getSceneCollectionId,
 } from "../scenes/collections";
 import { searchScenes } from "../scenes/search";
 import {
@@ -34,7 +35,7 @@ const RELATIVE_TIME_UNITS: [number, Intl.RelativeTimeFormatUnit][] = [
   [MS_IN_MINUTE, "minute"],
 ];
 
-const formatRelativeTime = (timestamp: number) => {
+export const formatRelativeTime = (timestamp: number) => {
   const diff = timestamp - Date.now();
   const formatter = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
   for (const [unitMs, unit] of RELATIVE_TIME_UNITS) {
@@ -63,6 +64,15 @@ export const ScenesTab = () => {
   const collections = [...getCollections(scenesIndex)].sort(
     (a, b) => a.createdAt - b.createdAt,
   );
+
+  const sceneCountByCollection = new Map<string | null, number>();
+  for (const scene of scenesIndex.scenes) {
+    const collectionId = getSceneCollectionId(scene, collections);
+    sceneCountByCollection.set(
+      collectionId,
+      (sceneCountByCollection.get(collectionId) ?? 0) + 1,
+    );
+  }
 
   const isSearching = Boolean(searchQuery.trim());
   const searchResults = isSearching
@@ -99,12 +109,13 @@ export const ScenesTab = () => {
   return (
     <div className="scenes-tab">
       <div className="scenes-tab__header">
-        <div className="scenes-tab__title">Scenes</div>
+        <div className="scenes-tab__title excalifont">Scenes</div>
       </div>
       <div className="scenes-tab__search">
         {searchIcon}
         <input
           type="text"
+          aria-label="Search scenes"
           placeholder="Search scenes…"
           value={searchQuery}
           onChange={(event) => setSearchQuery(event.target.value)}
@@ -157,7 +168,10 @@ export const ScenesTab = () => {
             );
           })}
           {!searchResults.length && (
-            <div className="scenes-tab__empty">No matching scenes.</div>
+            <div className="scenes-tab__empty">
+              <span className="excalifont">No matches</span>
+              <span>Nothing found for “{searchQuery.trim()}”.</span>
+            </div>
           )}
         </div>
       ) : (
@@ -171,7 +185,10 @@ export const ScenesTab = () => {
             {...collectionDropHandlers(ROOT_COLLECTION_ID)}
           >
             {dashboardIcon}
-            Dashboard
+            <span className="scenes-tab__row-label">Dashboard</span>
+            <span className="scenes-tab__count">
+              {sceneCountByCollection.get(null) ?? 0}
+            </span>
           </div>
           <div className="scenes-tab__section-header">
             Collections
@@ -199,12 +216,22 @@ export const ScenesTab = () => {
               >
                 <div className="scenes-tab__collection-name">
                   {folderIcon}
-                  {collection.name}
+                  <span className="scenes-tab__row-label">
+                    {collection.name}
+                  </span>
                 </div>
+                <span className="scenes-tab__count">
+                  {sceneCountByCollection.get(collection.id) ?? 0}
+                </span>
               </div>
             ))}
             {!collections.length && (
-              <div className="scenes-tab__empty">No collections yet.</div>
+              <div className="scenes-tab__empty">
+                <span className="excalifont">No collections yet</span>
+                <span>
+                  Create one to group scenes, then drag scenes onto it.
+                </span>
+              </div>
             )}
           </div>
         </>

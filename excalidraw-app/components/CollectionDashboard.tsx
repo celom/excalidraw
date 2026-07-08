@@ -41,6 +41,25 @@ import "./CollectionDashboard.scss";
 
 import type { SceneId } from "../scenes/storage";
 
+// hand-drawn underline flourish beneath the title, echoing the welcome
+// screen's sketched decorations
+const titleUnderline = (
+  <svg
+    className="collection-dashboard__title-underline"
+    viewBox="0 0 120 6"
+    preserveAspectRatio="none"
+    aria-hidden="true"
+  >
+    <path
+      d="M2 4 C 30 1.5, 55 5.5, 82 3 S 112 2.5, 118 3.5"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+    />
+  </svg>
+);
+
 export const CollectionDashboard = () => {
   const excalidrawAPI = useExcalidrawAPI();
   const [openCollectionId, setOpenCollectionId] = useAtom(openCollectionIdAtom);
@@ -154,6 +173,12 @@ export const CollectionDashboard = () => {
     )
     .sort((a, b) => b.updatedAt - a.updatedAt);
 
+  const handleCreateScene = () => {
+    const meta = createScene(collectionId);
+    // let the user name the scene right away on its new card
+    setRenamingSceneId(meta.id);
+  };
+
   return (
     <div
       className={clsx("collection-dashboard", {
@@ -178,8 +203,16 @@ export const CollectionDashboard = () => {
             }}
           />
         ) : (
-          <div className="collection-dashboard__title">
-            {collection ? collection.name : "Dashboard"}
+          <div className="collection-dashboard__heading">
+            <div className="collection-dashboard__title-wrap">
+              <div className="collection-dashboard__title excalifont">
+                {collection ? collection.name : "Dashboard"}
+              </div>
+              {titleUnderline}
+            </div>
+            <div className="collection-dashboard__subtitle">
+              {scenes.length === 1 ? "1 scene" : `${scenes.length} scenes`}
+            </div>
           </div>
         )}
         <div className="collection-dashboard__header-actions">
@@ -203,11 +236,7 @@ export const CollectionDashboard = () => {
             className="collection-dashboard__button"
             title="Add new scene"
             disabled={isCollaborating}
-            onClick={() => {
-              const meta = createScene(collectionId);
-              // let the user name the scene right away on its new card
-              setRenamingSceneId(meta.id);
-            }}
+            onClick={handleCreateScene}
           >
             {PlusIcon}
             New scene
@@ -250,33 +279,70 @@ export const CollectionDashboard = () => {
           Switching scenes is disabled during a live collaboration session.
         </div>
       )}
-      <div className="collection-dashboard__grid">
-        {scenes.map((scene) => (
-          <SceneCard
-            key={scene.id}
-            meta={scene}
-            isActive={scene.id === scenesIndex.activeSceneId}
+      {scenes.length ? (
+        <div className="collection-dashboard__grid">
+          {scenes.map((scene, index) => (
+            <SceneCard
+              key={scene.id}
+              meta={scene}
+              index={index}
+              isActive={scene.id === scenesIndex.activeSceneId}
+              disabled={isCollaborating}
+              isRenaming={scene.id === renamingSceneId}
+              onOpen={() => {
+                switchToScene(scene.id, excalidrawAPI);
+                setOpenCollectionId(null);
+              }}
+              onRenameStart={() => setRenamingSceneId(scene.id)}
+              onRenameCommit={(name) => {
+                renameScene(scene.id, name, excalidrawAPI);
+                setRenamingSceneId(null);
+              }}
+              onDuplicate={() => duplicateScene(scene.id)}
+              onDeleteRequest={() => setPendingDeleteSceneId(scene.id)}
+            />
+          ))}
+          <button
+            type="button"
+            className="collection-dashboard__ghost-card"
+            style={
+              { "--scene-card-index": scenes.length } as React.CSSProperties
+            }
+            title="Add new scene"
             disabled={isCollaborating}
-            isRenaming={scene.id === renamingSceneId}
-            onOpen={() => {
-              switchToScene(scene.id, excalidrawAPI);
-              setOpenCollectionId(null);
-            }}
-            onRenameStart={() => setRenamingSceneId(scene.id)}
-            onRenameCommit={(name) => {
-              renameScene(scene.id, name, excalidrawAPI);
-              setRenamingSceneId(null);
-            }}
-            onDuplicate={() => duplicateScene(scene.id)}
-            onDeleteRequest={() => setPendingDeleteSceneId(scene.id)}
-          />
-        ))}
-        {!scenes.length && (
-          <div className="collection-dashboard__empty">
-            No scenes in this collection.
+            onClick={handleCreateScene}
+          >
+            {PlusIcon}
+            <span className="excalifont">New scene</span>
+          </button>
+        </div>
+      ) : (
+        <div className="collection-dashboard__empty">
+          <div className="collection-dashboard__empty-title excalifont">
+            Nothing here yet
           </div>
-        )}
-      </div>
+          <div className="collection-dashboard__empty-hint">
+            {collection ? (
+              <>
+                Create a scene here, or drag one onto <b>{collection.name}</b>{" "}
+                in the sidebar.
+              </>
+            ) : (
+              "Create a scene and start sketching."
+            )}
+          </div>
+          <button
+            type="button"
+            className="collection-dashboard__ghost-card"
+            title="Add new scene"
+            disabled={isCollaborating}
+            onClick={handleCreateScene}
+          >
+            {PlusIcon}
+            <span className="excalifont">New scene</span>
+          </button>
+        </div>
+      )}
       {pendingDeleteScene && (
         <ConfirmDialog
           title="Delete scene"

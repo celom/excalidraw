@@ -23,7 +23,7 @@ import { LocalData } from "../data/LocalData";
 import { SCENE_DRAG_MIME } from "../scenes/collections";
 import { loadSceneSync } from "../scenes/storage";
 
-import { scenesTabIcon } from "./ScenesTab";
+import { formatRelativeTime, scenesTabIcon } from "./ScenesTab";
 
 import type { SceneMeta } from "../scenes/storage";
 
@@ -33,6 +33,7 @@ const PREVIEW_PADDING = 8;
 
 export const SceneCard = ({
   meta,
+  index,
   isActive,
   disabled,
   isRenaming,
@@ -43,6 +44,8 @@ export const SceneCard = ({
   onDeleteRequest,
 }: {
   meta: SceneMeta;
+  /** position in the grid — drives the staggered entrance animation */
+  index: number;
   isActive: boolean;
   disabled: boolean;
   isRenaming: boolean;
@@ -172,6 +175,7 @@ export const SceneCard = ({
         "scene-card--active": isActive,
         "scene-card--disabled": disabled,
       })}
+      style={{ "--scene-card-index": index } as React.CSSProperties}
       // dragging interferes with text selection in the rename input
       draggable={!disabled && !isRenaming}
       onDragStart={(event) => {
@@ -252,7 +256,7 @@ export const SceneCard = ({
           </div>
         )}
       </div>
-      <div className="scene-card__name">
+      <div className="scene-card__footer">
         {isRenaming ? (
           <input
             ref={renameInputRef}
@@ -270,10 +274,15 @@ export const SceneCard = ({
           />
         ) : (
           <>
-            {isActive && (
-              <span className="scene-card__active-dot" title="Active scene" />
-            )}
-            {meta.name}
+            <div className="scene-card__name">
+              {isActive && (
+                <span className="scene-card__active-dot" title="Active scene" />
+              )}
+              {meta.name}
+            </div>
+            <div className="scene-card__time">
+              {formatRelativeTime(meta.updatedAt)}
+            </div>
           </>
         )}
       </div>

@@ -1,15 +1,32 @@
+@keyframes scenes-dashboard-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes scenes-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
 .excalidraw {
   &.theme--dark .collection-dashboard {
     --scenes-text-secondary: var(--color-gray-40);
     // a notch darker than the canvas (--default-bg-color: #121212) — the
     // dark surface-* vars are all lighter, so no var fits here
     --dashboard-bg-color: #0d0d0d;
+    --dashboard-dot-color: rgba(255, 255, 255, 0.055);
+    --scene-card-hover-shadow: 0 6px 16px rgba(0, 0, 0, 0.45);
   }
 
   .collection-dashboard {
     --scenes-text-secondary: var(--color-gray-60);
     // a notch darker than the canvas (--default-bg-color: #fff)
     --dashboard-bg-color: var(--color-surface-mid);
+    --dashboard-dot-color: rgba(90, 90, 130, 0.16);
+    --scene-card-hover-shadow: var(--shadow-island);
 
     position: absolute;
     inset: 0;
@@ -21,6 +38,13 @@
     flex-direction: column;
     gap: 0.5rem;
     background-color: var(--dashboard-bg-color);
+    // dot grid evoking the drawing canvas
+    background-image: radial-gradient(
+      var(--dashboard-dot-color) 1px,
+      transparent 1.5px
+    );
+    background-size: 22px 22px;
+    animation: scenes-dashboard-in 0.15s ease;
 
     // the scenes sidebar (left) stacks above the overlay; inset by the
     // sidebar's actual width (see Sidebar.scss) so no canvas strip shows
@@ -36,15 +60,47 @@
 
     &__header {
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       justify-content: space-between;
-      padding: 1rem 1.5rem 0;
+      gap: 1rem;
+      padding: 1.25rem 1.5rem 0;
     }
 
+    &__heading {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      flex: 1;
+      min-width: 0;
+    }
+
+    &__title-wrap {
+      display: inline-flex;
+      flex-direction: column;
+      align-self: flex-start;
+      max-width: 100%;
+    }
+
+    // Excalifont (hand-drawn brand font) — no bold, the strokes carry it
     &__title {
-      font-size: 1.25rem;
-      font-weight: 700;
+      font-size: 1.625rem;
+      line-height: 1.2;
       color: var(--text-primary-color);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    &__title-underline {
+      width: 100%;
+      height: 5px;
+      margin-top: 0.125rem;
+      color: var(--color-primary);
+    }
+
+    &__subtitle {
+      font-size: 0.75rem;
+      color: var(--scenes-text-secondary);
     }
 
     &__rename-input {
@@ -65,13 +121,14 @@
       display: flex;
       align-items: center;
       gap: 0.25rem;
+      padding-top: 0.375rem;
     }
 
     &__button {
       display: flex;
       align-items: center;
       gap: 0.375rem;
-      padding: 0.375rem 0.625rem;
+      padding: 0.4375rem 0.75rem;
       margin-right: 0.25rem;
       border: none;
       border-radius: var(--border-radius-lg);
@@ -80,6 +137,9 @@
       font-size: 0.75rem;
       font-weight: 600;
       cursor: pointer;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+      transition: background-color 0.12s ease, transform 0.1s ease,
+        box-shadow 0.1s ease;
 
       svg {
         width: 0.875rem;
@@ -90,17 +150,24 @@
         background-color: var(--color-primary-darker);
       }
 
+      &:active:not(:disabled) {
+        transform: translateY(1px);
+        box-shadow: none;
+      }
+
       &:disabled {
         opacity: 0.5;
         cursor: not-allowed;
       }
 
       &--secondary {
-        background-color: var(--color-surface-high);
+        background-color: var(--island-bg-color);
         color: var(--text-primary-color);
+        box-shadow: 0 0 0 1px var(--default-border-color) inset,
+          0 1px 2px rgba(0, 0, 0, 0.06);
 
         &:hover:not(:disabled) {
-          background-color: var(--color-surface-mid);
+          background-color: var(--color-surface-high);
         }
       }
     }
@@ -118,6 +185,7 @@
       background: transparent;
       color: var(--scenes-text-secondary);
       cursor: pointer;
+      transition: background-color 0.12s ease, color 0.12s ease;
 
       svg {
         width: 100%;
@@ -125,7 +193,7 @@
       }
 
       &:hover {
-        background-color: var(--color-surface-mid);
+        background-color: var(--color-surface-high);
         color: var(--text-primary-color);
       }
     }
@@ -134,8 +202,9 @@
       margin: 0 1.5rem;
       font-size: 0.75rem;
       color: var(--scenes-text-secondary);
-      padding: 0.375rem 0.5rem;
+      padding: 0.4375rem 0.625rem;
       background-color: var(--color-surface-high);
+      border-inline-start: 3px solid var(--color-warning-darker);
       border-radius: var(--border-radius-md);
     }
 
@@ -144,17 +213,72 @@
       overflow-y: auto;
       padding: 0.5rem 1.5rem 1.5rem;
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
       gap: 1rem;
       align-content: start;
     }
 
+    &__ghost-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.375rem;
+      aspect-ratio: 4 / 3;
+      padding: 0;
+      border: 1.5px dashed var(--color-border-outline-variant);
+      border-radius: var(--border-radius-lg);
+      background: transparent;
+      color: var(--scenes-text-secondary);
+      font-size: 1rem;
+      cursor: pointer;
+      animation: scenes-card-in 0.25s ease backwards;
+      animation-delay: calc(min(var(--scene-card-index, 0), 14) * 30ms);
+      transition: border-color 0.15s ease, color 0.15s ease;
+
+      svg {
+        width: 1.25rem;
+        height: 1.25rem;
+      }
+
+      &:hover:not(:disabled) {
+        border-color: var(--color-primary);
+        color: var(--color-primary);
+      }
+
+      &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+    }
+
     &__empty {
-      grid-column: 1 / -1;
-      padding: 2rem 0;
+      flex: 1 1 auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      // bottom padding nudges the block up for optical centering
+      padding: 1.5rem 1.5rem 10vh;
       text-align: center;
+
+      .collection-dashboard__ghost-card {
+        flex: 0 0 auto;
+        width: min(240px, 100%);
+        margin-top: 1rem;
+      }
+    }
+
+    &__empty-title {
+      font-size: 1.75rem;
+      color: var(--text-primary-color);
+    }
+
+    &__empty-hint {
       font-size: 0.875rem;
       color: var(--scenes-text-secondary);
+      max-width: 26rem;
     }
   }
 
@@ -163,14 +287,24 @@
     display: flex;
     flex-direction: column;
     aspect-ratio: 4 / 3;
-    border: 1px solid var(--color-surface-high);
+    border: 1px solid var(--default-border-color);
     border-radius: var(--border-radius-lg);
     background-color: var(--island-bg-color);
     cursor: pointer;
     overflow: hidden;
+    animation: scenes-card-in 0.25s ease backwards;
+    animation-delay: calc(min(var(--scene-card-index, 0), 14) * 30ms);
+    transition: border-color 0.15s ease, transform 0.15s ease,
+      box-shadow 0.15s ease;
 
     &:hover:not(.scene-card--disabled) {
       border-color: var(--color-primary);
+      transform: translateY(-2px);
+      box-shadow: var(--scene-card-hover-shadow);
+
+      .scene-card__preview-canvas canvas {
+        transform: scale(1.04);
+      }
     }
 
     &:hover .scene-card__menu-button,
@@ -180,6 +314,7 @@
 
     &--active {
       border-color: var(--color-primary);
+      box-shadow: 0 0 0 1px var(--color-primary);
     }
 
     &--disabled {
@@ -213,6 +348,7 @@
         // the snapshot is exported at the preview's aspect ratio; cover
         // absorbs any drift from the box resizing after the export
         object-fit: cover;
+        transition: transform 0.25s ease;
       }
     }
 
@@ -220,7 +356,8 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 0.75rem;
+      font-size: 0.9375rem;
+      font-family: "Excalifont", "Xiaolai";
       color: var(--scenes-text-secondary);
 
       svg {
@@ -237,25 +374,40 @@
       background-color: var(--color-primary);
     }
 
-    &__name {
+    &__footer {
       flex: 0 0 auto;
       display: flex;
       align-items: center;
-      gap: 0.375rem;
+      gap: 0.5rem;
       padding: 0.5rem 0.625rem;
-      // slightly darker (light theme) / brighter (dark theme) than the card
-      background-color: var(--color-surface-high);
-      font-size: 0.875rem;
+      background-color: var(--island-bg-color);
+      border-top: 1px solid var(--default-border-color);
+    }
+
+    &__name {
+      flex: 1 1 auto;
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      gap: 0.375rem;
+      font-size: 0.8125rem;
+      font-weight: 600;
       color: var(--text-primary-color);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
 
+    &__time {
+      flex: 0 0 auto;
+      font-size: 0.6875rem;
+      color: var(--scenes-text-secondary);
+    }
+
     &__rename-input {
       flex: 1;
       min-width: 0;
-      font-size: 0.875rem;
+      font-size: 0.8125rem;
       padding: 0.125rem 0.25rem;
       border: 1px solid var(--color-primary);
       border-radius: var(--border-radius-md);
@@ -277,12 +429,15 @@
       width: 1.75rem;
       height: 1.75rem;
       padding: 0.25rem;
-      border: 1px solid var(--color-surface-high);
+      border: 1px solid var(--default-border-color);
       border-radius: var(--border-radius-md);
       background-color: var(--island-bg-color);
       color: var(--scenes-text-secondary);
       cursor: pointer;
       opacity: 0;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      transition: opacity 0.12s ease, background-color 0.12s ease,
+        color 0.12s ease;
 
       svg {
         width: 100%;
@@ -304,7 +459,7 @@
       display: flex;
       flex-direction: column;
       padding: 0.25rem;
-      border: 1px solid var(--color-surface-high);
+      border: 1px solid var(--default-border-color);
       border-radius: var(--border-radius-lg);
       background-color: var(--popup-bg-color);
       box-shadow: var(--shadow-island);
@@ -341,6 +496,23 @@
       .scene-card__menu-item--danger {
         color: var(--color-danger);
       }
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .excalidraw .collection-dashboard,
+  .excalidraw .collection-dashboard__ghost-card,
+  .excalidraw .scene-card {
+    animation: none;
+    transition: none;
+  }
+
+  .excalidraw .scene-card:hover:not(.scene-card--disabled) {
+    transform: none;
+
+    .scene-card__preview-canvas canvas {
+      transform: none;
     }
   }
 }
