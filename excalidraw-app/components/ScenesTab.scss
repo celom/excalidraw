@@ -20,7 +20,7 @@
       // same vertical rhythm as the dashboard/collection rows below — the
       // input carries part of the vertical padding so its own background
       // has breathing room when focused
-      padding: 0.375rem 0.625rem;
+      padding: 0.5rem 0.75rem;
       border-radius: var(--border-radius-lg);
       background-color: var(--color-surface-high);
 
@@ -68,7 +68,7 @@
       align-items: center;
       gap: 0.375rem;
       // matches the search box's overall height (wrapper + input padding)
-      padding: 0.625rem;
+      padding: 0.75rem;
       border-radius: var(--border-radius-lg);
       font-size: 0.875rem;
       font-weight: 600;
@@ -158,13 +158,25 @@
       flex: 1;
       min-width: 0;
       font-size: 0.875rem;
-      padding: 0.125rem 0.25rem;
-      margin-block: -0.125rem;
-      border: 1px solid var(--color-primary);
+      // same inner padding as the search input; negative block margin keeps
+      // the row from growing while editing
+      padding: 0.25rem 0.375rem;
+      margin-block: -0.25rem;
+      border: none;
       border-radius: var(--border-radius-md);
-      background-color: var(--island-bg-color);
+      background: transparent;
       color: var(--text-primary-color);
       outline: none;
+      transition: background-color 0.15s ease;
+
+      // only the input box changes background — the row keeps its selected
+      // color, and the editor's global focus ring is suppressed
+      &:focus,
+      &:focus-visible {
+        background-color: var(--island-bg-color);
+        outline: none;
+        box-shadow: none;
+      }
     }
 
     &__hint {
@@ -231,7 +243,7 @@
       align-items: center;
       gap: 0.5rem;
       // matches the search box's overall height (wrapper + input padding)
-      padding: 0.625rem;
+      padding: 0.75rem;
       border-radius: var(--border-radius-lg);
       cursor: pointer;
       transition: background-color 0.12s ease;
@@ -254,11 +266,14 @@
         background-color: var(--color-primary-light);
       }
 
+      // mirrors the search box while editing: the row keeps its selected
+      // background and only the input box changes color
       &--renaming {
         cursor: default;
+        background-color: var(--color-surface-high);
 
-        &:hover {
-          background-color: transparent;
+        .scenes-tab__collection-name svg {
+          color: var(--color-primary);
         }
       }
     }
