@@ -118,6 +118,7 @@ import {
 import { updateStaleImageStatuses } from "./data/FileManager";
 import { FileStatusStore } from "./data/fileStatusStore";
 import { applyStoredScene } from "./scenes/actions";
+import { initFolderSync, isFolderSyncSupported } from "./scenes/folderSync";
 import {
   getActiveSceneId,
   refreshScenesIndexFromStorage,
@@ -416,6 +417,14 @@ const ExcalidrawWrapper = () => {
     setTimeout(() => {
       trackEvent("load", "version", getVersion());
     }, VERSION_TIMEOUT);
+  }, []);
+
+  useEffect(() => {
+    // resume the scenes folder mirror if it was enabled in a previous
+    // session (no-op on browsers without the File System Access API)
+    if (isFolderSyncSupported() && !isTestEnv()) {
+      initFolderSync();
+    }
   }, []);
 
   const [, setShareDialogState] = useAtom(shareDialogStateAtom);

@@ -158,6 +158,20 @@ describe("CollectionDashboard", () => {
     }
   });
 
+  it("hides the folder-sync control without File System Access support", async () => {
+    await render(<ExcalidrawApp />);
+
+    act(() => {
+      h.app.toggleSidebar({ name: SCENES_SIDEBAR_NAME, force: true });
+    });
+    await waitFor(() => {
+      expect(document.querySelector(".scenes-tab")).not.toBeNull();
+    });
+    // jsdom has no showDirectoryPicker — the control must not render
+    expect("showDirectoryPicker" in window).toBe(false);
+    expect(document.querySelector(".folder-sync")).toBeNull();
+  });
+
   it("still closes on Escape", async () => {
     await render(<ExcalidrawApp />);
 

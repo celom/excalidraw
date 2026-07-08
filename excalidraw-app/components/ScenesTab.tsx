@@ -30,6 +30,7 @@ import {
   scenesSidebarPinnedAtom,
 } from "../scenes/state";
 
+import { FolderSyncControl } from "./FolderSyncControl";
 import { useScenePreview } from "./useScenePreview";
 
 import "./ScenesTab.scss";
@@ -324,6 +325,7 @@ export const ScenesTab = () => {
           </div>
         </>
       )}
+      <FolderSyncControl />
       {pendingDeleteCollection && (
         <ConfirmDialog
           title="Delete collection"

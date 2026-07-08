@@ -136,7 +136,7 @@ const saveDataStateToLocalStorage = (
   }
 };
 
-const isQuotaExceededError = (error: any) => {
+export const isQuotaExceededError = (error: any) => {
   return error instanceof DOMException && error.name === "QuotaExceededError";
 };
 

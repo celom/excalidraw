@@ -1,10 +1,12 @@
 import { isInputLike } from "@excalidraw/common";
 import { useExcalidrawAPI } from "@excalidraw/excalidraw";
 import ConfirmDialog from "@excalidraw/excalidraw/components/ConfirmDialog";
+import { ErrorDialog } from "@excalidraw/excalidraw/components/ErrorDialog";
 import {
   CloseIcon,
   LoadIcon,
   PlusIcon,
+  downloadIcon,
 } from "@excalidraw/excalidraw/components/icons";
 import { useUIAppState } from "@excalidraw/excalidraw/context/ui-appState";
 import clsx from "clsx";
@@ -27,6 +29,10 @@ import {
   getCollections,
   getSceneCollectionId,
 } from "../scenes/collections";
+import { detectConflicts } from "../scenes/archive";
+import { exportScenesArchive } from "../scenes/export";
+import { pickZipFile } from "../scenes/fileio";
+import { applyArchiveImport, readArchive } from "../scenes/import";
 import {
   ROOT_COLLECTION_ID,
   SCENES_SIDEBAR_NAME,
@@ -35,12 +41,20 @@ import {
   scenesSidebarPinnedAtom,
 } from "../scenes/state";
 
+import { ArchiveConflictDialog } from "./ArchiveConflictDialog";
 import { SceneCard } from "./SceneCard";
 import { dashboardIcon, folderIcon } from "./ScenesTab";
 
 import "./CollectionDashboard.scss";
 
+import type { ParsedArchive } from "../scenes/import";
 import type { SceneId } from "../scenes/storage";
+
+type PendingArchiveImport = {
+  archive: ParsedArchive;
+  conflictingSceneCount: number;
+  conflictingCollectionCount: number;
+};
 
 type DropPosition = "before" | "after";
 
@@ -67,6 +81,9 @@ export const CollectionDashboard = () => {
   const [renamingSceneId, setRenamingSceneId] = useState<SceneId | null>(null);
   const [pendingDeleteSceneId, setPendingDeleteSceneId] =
     useState<SceneId | null>(null);
+  const [pendingImport, setPendingImport] =
+    useState<PendingArchiveImport | null>(null);
+  const [importError, setImportError] = useState<string | null>(null);
 
   // card being dragged for reorder, and where it would land
   const [draggingSceneId, setDraggingSceneId] = useState<SceneId | null>(null);
@@ -128,6 +145,10 @@ export const CollectionDashboard = () => {
           setRenamingSceneId(null);
         } else if (pendingDeleteSceneId) {
           setPendingDeleteSceneId(null);
+        } else if (pendingImport) {
+          setPendingImport(null);
+        } else if (importError) {
+          setImportError(null);
         } else {
           setOpenCollectionId(null);
         }
@@ -159,7 +180,14 @@ export const CollectionDashboard = () => {
       window.removeEventListener("cut", onClipboard, { capture: true });
       window.removeEventListener("paste", onClipboard, { capture: true });
     };
-  }, [isOpen, renamingSceneId, pendingDeleteSceneId, setOpenCollectionId]);
+  }, [
+    isOpen,
+    renamingSceneId,
+    pendingDeleteSceneId,
+    pendingImport,
+    importError,
+    setOpenCollectionId,
+  ]);
 
   if (!excalidrawAPI || !isOpen || isDangling) {
     return null;
@@ -182,6 +210,32 @@ export const CollectionDashboard = () => {
     const meta = createScene(collectionId);
     // let the user name the scene right away on its new card
     setRenamingSceneId(meta.id);
+  };
+
+  const handleImportArchive = async () => {
+    const file = await pickZipFile();
+    if (!file) {
+      return;
+    }
+    try {
+      const archive = await readArchive(file);
+      const conflicts = detectConflicts(archive.manifest, scenesIndex);
+      if (
+        conflicts.sceneConflicts.length ||
+        conflicts.collectionConflicts.length
+      ) {
+        setPendingImport({
+          archive,
+          conflictingSceneCount: conflicts.sceneConflicts.length,
+          conflictingCollectionCount: conflicts.collectionConflicts.length,
+        });
+      } else {
+        await applyArchiveImport({ archive, resolution: null, excalidrawAPI });
+      }
+    } catch (error: any) {
+      console.error(error);
+      setImportError(error.message);
+    }
   };
 
   const draggingIndex = draggingSceneId
@@ -267,6 +321,36 @@ export const CollectionDashboard = () => {
           >
             {LoadIcon}
             Import scene
+          </button>
+          {!collection && (
+            <button
+              type="button"
+              className="collection-dashboard__button collection-dashboard__button--secondary"
+              title="Import a previously exported archive (.zip of .excalidraw files)"
+              disabled={isCollaborating}
+              onClick={handleImportArchive}
+            >
+              {LoadIcon}
+              Import archive
+            </button>
+          )}
+          <button
+            type="button"
+            className="collection-dashboard__button collection-dashboard__button--secondary"
+            title={
+              collection
+                ? "Export this collection as a zip of .excalidraw files"
+                : "Export all scenes and collections as a zip of .excalidraw files"
+            }
+            // the active scene's local snapshot is stale during collab —
+            // same gating as the other scene-data actions
+            disabled={isCollaborating}
+            onClick={() =>
+              exportScenesArchive(collection ? collection.id : "all")
+            }
+          >
+            {downloadIcon}
+            {collection ? "Export collection" : "Export all"}
           </button>
           <button
             type="button"
@@ -366,6 +450,33 @@ export const CollectionDashboard = () => {
             <span className="excalifont">New scene</span>
           </button>
         </div>
+      )}
+      {pendingImport && (
+        <ArchiveConflictDialog
+          sceneCount={pendingImport.archive.manifest.scenes.length}
+          collectionCount={pendingImport.archive.manifest.collections.length}
+          conflictingSceneCount={pendingImport.conflictingSceneCount}
+          conflictingCollectionCount={pendingImport.conflictingCollectionCount}
+          onCancel={() => setPendingImport(null)}
+          onResolve={async (resolution) => {
+            setPendingImport(null);
+            try {
+              await applyArchiveImport({
+                archive: pendingImport.archive,
+                resolution,
+                excalidrawAPI,
+              });
+            } catch (error: any) {
+              console.error(error);
+              setImportError(error.message);
+            }
+          }}
+        />
+      )}
+      {importError && (
+        <ErrorDialog onClose={() => setImportError(null)}>
+          {importError}
+        </ErrorDialog>
       )}
       {pendingDeleteScene && (
         <ConfirmDialog
