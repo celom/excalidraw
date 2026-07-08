@@ -11,6 +11,15 @@ RUN --mount=type=cache,target=/root/.cache/yarn \
 
 ARG NODE_ENV=production
 
+# Optional build-time overrides for self-hosting. When an arg is not
+# provided it stays unset and Vite falls back to .env.production.
+ARG VITE_APP_WS_SERVER_URL
+ARG VITE_APP_FIREBASE_CONFIG
+ARG VITE_APP_BACKEND_V2_GET_URL
+ARG VITE_APP_BACKEND_V2_POST_URL
+ARG VITE_APP_AI_BACKEND
+ARG VITE_APP_ENABLE_TRACKING
+
 RUN npm_config_target_arch=${TARGETARCH} yarn build:app:docker
 
 FROM nginx:stable-alpine-slim@sha256:2c605dbeab79a6b2a63340474fe58119d0ef95bdc4b1f41df0aa689659b3d13b

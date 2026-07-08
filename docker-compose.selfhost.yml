@@ -1,0 +1,55 @@
+# Self-hosting compose file (e.g. for Coolify): app + collaboration room server.
+#
+# The VITE_APP_* values are baked into the static bundle at BUILD time —
+# changing them requires a rebuild, not a restart.
+#
+# Required environment variable (set it in Coolify's env UI or a .env file):
+#
+#   VITE_APP_WS_SERVER_URL   Public HTTPS URL of the excalidraw-room service
+#                            (e.g. https://room.example.com). The browser
+#                            connects to it directly, so this must be the
+#                            public domain you assign to `excalidraw-room`
+#                            in your proxy — NOT the internal compose
+#                            hostname.
+#
+# Optional:
+#
+#   VITE_APP_FIREBASE_CONFIG   JSON config of your own Firebase project, used
+#                              by collab for scene persistence and image/file
+#                              sharing. Defaults to empty: live collaboration
+#                              still works, but images don't sync and rooms
+#                              aren't persisted after everyone leaves.
+#
+#   VITE_APP_BACKEND_V2_GET_URL / VITE_APP_BACKEND_V2_POST_URL
+#                              "Export to link" storage backend. Defaults to
+#                              Excalidraw's public json.excalidraw.com. Point
+#                              at a self-hosted excalidraw-storage-backend to
+#                              keep share links on your own infra.
+#
+#   VITE_APP_AI_BACKEND        Backend for AI features (text-to-diagram etc.).
+#                              Defaults to Excalidraw's public service.
+#
+# In Coolify: create a "Docker Compose" resource pointing at this file, set
+# the env vars above, then assign a domain to `excalidraw` (port 80) and a
+# second domain to `excalidraw-room` (port 80).
+
+services:
+  excalidraw:
+    build:
+      context: .
+      args:
+        - VITE_APP_WS_SERVER_URL=${VITE_APP_WS_SERVER_URL:?set this to the public URL of the excalidraw-room service}
+        - VITE_APP_FIREBASE_CONFIG=${VITE_APP_FIREBASE_CONFIG:-}
+        - VITE_APP_BACKEND_V2_GET_URL=${VITE_APP_BACKEND_V2_GET_URL:-https://json.excalidraw.com/api/v2/}
+        - VITE_APP_BACKEND_V2_POST_URL=${VITE_APP_BACKEND_V2_POST_URL:-https://json.excalidraw.com/api/v2/post/}
+        - VITE_APP_AI_BACKEND=${VITE_APP_AI_BACKEND:-https://oss-ai.excalidraw.com}
+        - VITE_APP_ENABLE_TRACKING=${VITE_APP_ENABLE_TRACKING:-false}
+    ports:
+      - "3000:80"
+    restart: unless-stopped
+
+  excalidraw-room:
+    image: excalidraw/excalidraw-room:latest
+    ports:
+      - "3002:80"
+    restart: unless-stopped
