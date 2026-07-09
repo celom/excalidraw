@@ -3,7 +3,7 @@ import { Sidebar } from "@excalidraw/excalidraw";
 import { useAtom } from "../app-jotai";
 import { SCENES_SIDEBAR_NAME, scenesSidebarPinnedAtom } from "../scenes/state";
 
-import { ScenesTab } from "./ScenesTab";
+import { ScenesTab, scenesTabIcon } from "./ScenesTab";
 
 export { SCENES_SIDEBAR_NAME };
 
@@ -17,7 +17,12 @@ export const AppScenesSidebar = () => {
       docked={isPinned}
       onDock={setIsPinned}
     >
-      <Sidebar.Header />
+      <Sidebar.Header>
+        <div className="scenes-tab__header-title">
+          {scenesTabIcon}
+          Scenes
+        </div>
+      </Sidebar.Header>
       <ScenesTab />
     </Sidebar>
   );

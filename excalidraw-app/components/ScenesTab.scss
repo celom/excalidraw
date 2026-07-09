@@ -3,6 +3,22 @@
     --scenes-text-secondary: var(--color-gray-40);
   }
 
+  // lives in the Sidebar.Header, outside .scenes-tab
+  .scenes-tab__header-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--text-primary-color);
+
+    svg {
+      width: 1rem;
+      height: 1rem;
+      color: var(--color-primary);
+    }
+  }
+
   .scenes-tab {
     --scenes-text-secondary: var(--color-gray-60);
 
@@ -97,6 +113,14 @@
         }
       }
 
+      &--open {
+        background-color: var(--color-surface-high);
+
+        svg {
+          color: var(--color-primary);
+        }
+      }
+
       &--drop-target {
         outline: 1.5px dashed var(--color-primary);
         outline-offset: -1.5px;
@@ -110,6 +134,24 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      // children mustn't steal drag events from the drop-target row
+      pointer-events: none;
+    }
+
+    // scene-count pill on the row's trailing edge; inside collection rows it
+    // sits absolutely over the (hidden) hover actions so the two swap in place
+    &__row-count {
+      flex: 0 0 auto;
+      min-width: 1.25rem;
+      padding: 0.0625rem 0.375rem;
+      border-radius: 0.625rem;
+      background-color: var(--color-surface-low);
+      font-size: 0.6875rem;
+      font-weight: 500;
+      font-variant-numeric: tabular-nums;
+      text-align: center;
+      color: var(--scenes-text-secondary);
+      transition: opacity 0.12s ease;
       // children mustn't steal drag events from the drop-target row
       pointer-events: none;
     }
@@ -243,6 +285,8 @@
     }
 
     &__collection {
+      // anchor for the absolutely-positioned scene count
+      position: relative;
       display: flex;
       align-items: center;
       gap: 0.5rem;
@@ -252,7 +296,16 @@
       cursor: pointer;
       transition: background-color 0.12s ease;
 
-      &:hover {
+      // overlays the (hidden) hover actions so count ↔ actions swap in place
+      .scenes-tab__row-count {
+        position: absolute;
+        right: 0.75rem;
+        top: 50%;
+        transform: translateY(-50%);
+      }
+
+      &:hover,
+      &:focus-within {
         background-color: var(--color-surface-high);
 
         .scenes-tab__collection-name svg {
@@ -261,6 +314,18 @@
 
         .scenes-tab__row-actions {
           opacity: 1;
+        }
+
+        .scenes-tab__row-count {
+          opacity: 0;
+        }
+      }
+
+      &--open {
+        background-color: var(--color-surface-high);
+
+        .scenes-tab__collection-name svg {
+          color: var(--color-primary);
         }
       }
 

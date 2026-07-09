@@ -10,7 +10,7 @@ import {
 import clsx from "clsx";
 import { useState } from "react";
 
-import { useAtomValue, useSetAtom } from "../app-jotai";
+import { useAtom, useAtomValue } from "../app-jotai";
 import { isCollaboratingAtom } from "../collab/Collab";
 import { LocalData } from "../data/LocalData";
 import { switchToScene } from "../scenes/actions";
@@ -20,6 +20,7 @@ import {
   createCollection,
   deleteCollection,
   getCollections,
+  getSceneCollectionId,
   renameCollection,
   setCollectionIcon,
 } from "../scenes/collections";
@@ -86,7 +87,7 @@ export const ScenesTab = () => {
   const scenesIndex = useAtomValue(scenesIndexAtom);
   const isCollaborating = useAtomValue(isCollaboratingAtom);
   const isSidebarPinned = useAtomValue(scenesSidebarPinnedAtom);
-  const setOpenCollectionId = useSetAtom(openCollectionIdAtom);
+  const [openCollectionId, setOpenCollectionId] = useAtom(openCollectionIdAtom);
 
   const [dropTargetId, setDropTargetId] = useState<OpenCollectionId | null>(
     null,
@@ -113,6 +114,12 @@ export const ScenesTab = () => {
   const collections = [...getCollections(scenesIndex)].sort(
     (a, b) => a.createdAt - b.createdAt,
   );
+
+  const sceneCounts = new Map<OpenCollectionId, number>();
+  for (const scene of scenesIndex.scenes) {
+    const key = getSceneCollectionId(scene, collections) ?? ROOT_COLLECTION_ID;
+    sceneCounts.set(key, (sceneCounts.get(key) ?? 0) + 1);
+  }
 
   const pendingDeleteCollection = collections.find(
     (collection) => collection.id === pendingDeleteCollectionId,
@@ -233,6 +240,8 @@ export const ScenesTab = () => {
         <>
           <div
             className={clsx("scenes-tab__dashboard", {
+              "scenes-tab__dashboard--open":
+                openCollectionId === ROOT_COLLECTION_ID,
               "scenes-tab__dashboard--drop-target":
                 dropTargetId === ROOT_COLLECTION_ID,
             })}
@@ -241,6 +250,9 @@ export const ScenesTab = () => {
           >
             {dashboardIcon}
             <span className="scenes-tab__row-label">Dashboard</span>
+            <span className="scenes-tab__row-count">
+              {sceneCounts.get(ROOT_COLLECTION_ID) ?? 0}
+            </span>
           </div>
           <div className="scenes-tab__section-header">
             Collections
@@ -288,6 +300,8 @@ export const ScenesTab = () => {
                 <div
                   key={collection.id}
                   className={clsx("scenes-tab__collection", {
+                    "scenes-tab__collection--open":
+                      openCollectionId === collection.id,
                     "scenes-tab__collection--drop-target":
                       dropTargetId === collection.id,
                   })}
@@ -316,6 +330,9 @@ export const ScenesTab = () => {
                       {collection.name}
                     </span>
                   </div>
+                  <span className="scenes-tab__row-count">
+                    {sceneCounts.get(collection.id) ?? 0}
+                  </span>
                   <div className="scenes-tab__row-actions">
                     <button
                       type="button"
