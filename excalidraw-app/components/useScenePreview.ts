@@ -3,6 +3,7 @@ import { exportToCanvas } from "@excalidraw/excalidraw";
 import { useUIAppState } from "@excalidraw/excalidraw/context/ui-appState";
 import {
   getCommonBounds,
+  getNonDeletedElements,
   isInitializedImageElement,
   newFrameElement,
 } from "@excalidraw/element";
@@ -41,7 +42,7 @@ export const useScenePreview = (meta: SceneMeta) => {
 
     const renderPreview = async () => {
       const data = loadSceneSync(meta.id);
-      const elements = data?.elements.filter((element) => !element.isDeleted);
+      const elements = data && getNonDeletedElements(data.elements);
       if (!elements?.length) {
         setStatus("empty");
         return;
