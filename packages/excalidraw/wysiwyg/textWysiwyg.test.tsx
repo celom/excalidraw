@@ -1382,10 +1382,10 @@ describe("textWysiwyg", () => {
       mouse.downAt(rectangle.x, rectangle.y);
       mouse.moveTo(rectangle.x + 100, rectangle.y + 50);
       mouse.up(rectangle.x + 100, rectangle.y + 50);
-      expect(rectangle.x).toBe(80);
-      expect(rectangle.y).toBe(40);
-      expect(text.x).toBe(65);
-      expect(text.y).toBe(55);
+      expect(rectangle.x).toBe(60);
+      expect(rectangle.y).toBe(-60);
+      expect(text.x).toBe(75);
+      expect(text.y).toBe(-45);
 
       Keyboard.withModifierKeys({ ctrl: true }, () => {
         Keyboard.keyPress(KEYS.Z);

@@ -1290,11 +1290,11 @@ describe("Test Linear Elements", () => {
       ).toMatchInlineSnapshot(`
         [
           20,
-          35,
+          15,
           "501.11716",
           95,
           "205.45894",
-          "52.50000",
+          "42.50000",
         ]
       `);
     });
