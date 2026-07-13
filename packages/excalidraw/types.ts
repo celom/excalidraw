@@ -228,6 +228,7 @@ export type InteractiveCanvasAppState = Readonly<
     newElement: AppState["newElement"];
     isBindingEnabled: AppState["isBindingEnabled"];
     isMidpointSnappingEnabled: AppState["isMidpointSnappingEnabled"];
+    gridModeEnabled: AppState["gridModeEnabled"];
     suggestedBinding: AppState["suggestedBinding"];
     isRotating: AppState["isRotating"];
     elementsToHighlight: AppState["elementsToHighlight"];
@@ -913,7 +914,7 @@ export type AppClassProperties = {
   onMagicframeToolSelect: App["onMagicframeToolSelect"];
   getName: App["getName"];
   dismissLinearEditor: App["dismissLinearEditor"];
-  flowChartCreator: App["flowChartCreator"];
+  flowchart: App["flowchart"];
   getEffectiveGridSize: App["getEffectiveGridSize"];
   setPlugins: App["setPlugins"];
   plugins: App["plugins"];
@@ -928,6 +929,7 @@ export type AppClassProperties = {
   onStateChange: App["onStateChange"];
 
   lastPointerMoveCoords: App["lastPointerMoveCoords"];
+  lastPointerMoveEvent: App["lastPointerMoveEvent"];
   bindModeHandler: App["bindModeHandler"];
 
   setAppState: App["setAppState"];
@@ -1101,7 +1103,6 @@ export type FrameNameBounds = {
   y: number;
   width: number;
   height: number;
-  angle: number;
 };
 
 export type FrameNameBoundsCache = {

@@ -1,6 +1,6 @@
 import { Card } from "@excalidraw/excalidraw/components/Card";
 import ConfirmDialog from "@excalidraw/excalidraw/components/ConfirmDialog";
-import { ToolButton } from "@excalidraw/excalidraw/components/ToolButton";
+import { IconButton } from "@excalidraw/excalidraw/components/IconButton";
 import { useState } from "react";
 
 import { appJotaiStore, useAtomValue } from "../app-jotai";
@@ -190,7 +190,7 @@ export const FolderSyncExportCard = ({
         )}
       </div>
       {status === "active" ? (
-        <ToolButton
+        <IconButton
           className="Card-button"
           type="button"
           title="Change folder"
@@ -199,7 +199,7 @@ export const FolderSyncExportCard = ({
           onClick={chooseFolder}
         />
       ) : status === "needs-permission" ? (
-        <ToolButton
+        <IconButton
           className="Card-button"
           type="button"
           title="Resume sync"
@@ -208,7 +208,7 @@ export const FolderSyncExportCard = ({
           onClick={() => reenableFolderSync()}
         />
       ) : (
-        <ToolButton
+        <IconButton
           className="Card-button"
           type="button"
           title="Choose folder"
